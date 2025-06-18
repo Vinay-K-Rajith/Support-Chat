@@ -88,7 +88,7 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                 key={msg.id}
                 content={msg.content}
                 isUser={msg.isUser}
-                timestamp={msg.timestamp}
+                timestamp={msg.timestamp ? new Date(msg.timestamp) : new Date()}
               />
             ))}
             

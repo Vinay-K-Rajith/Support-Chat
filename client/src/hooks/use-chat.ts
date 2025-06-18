@@ -33,6 +33,10 @@ export function useChat() {
   // Get chat history
   const { data: historyData } = useQuery({
     queryKey: ["/api/chat/history", sessionId],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/chat/history/${sessionId}`);
+      return response.json();
+    },
     enabled: !!sessionId,
   });
 
@@ -47,10 +51,13 @@ export function useChat() {
       });
       return response.json() as Promise<ChatResponse>;
     },
-    onSuccess: () => {
-      // Invalidate and refetch chat history
-      queryClient.invalidateQueries({
-        queryKey: ["/api/chat/history", sessionId],
+    onSuccess: (data) => {
+      // Update the cache directly with the new messages
+      queryClient.setQueryData(["/api/chat/history", sessionId], (oldData: any) => {
+        const currentMessages = oldData?.messages || [];
+        return {
+          messages: [...currentMessages, data.userMessage, data.aiMessage]
+        };
       });
     },
   });
