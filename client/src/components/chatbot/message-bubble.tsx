@@ -30,23 +30,58 @@ function formatMessageContent(content: string, isUser: boolean): JSX.Element {
         </div>
       );
     }
+    // Handle inline bold text within lines
+    else if (line.includes('**')) {
+      const processedLine = line.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+        if (part.match(/^\*\*(.+)\*\*$/)) {
+          const boldText = part.replace(/^\*\*(.+)\*\*$/, '$1');
+          return <strong key={`bold-${index}`} className="font-semibold text-school-deep">{boldText}</strong>;
+        }
+        return part;
+      });
+      elements.push(
+        <div key={key} className="mb-1">
+          {processedLine}
+        </div>
+      );
+    }
     // Handle bullet points (starting with * or •)
     else if (line.match(/^[\s]*[\*•]\s+(.+)$/)) {
       const bulletText = line.replace(/^[\s]*[\*•]\s+(.+)$/, '$1');
+      const processedBulletText = bulletText.includes('**') 
+        ? bulletText.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+            if (part.match(/^\*\*(.+)\*\*$/)) {
+              const boldText = part.replace(/^\*\*(.+)\*\*$/, '$1');
+              return <strong key={`bullet-bold-${index}`} className="font-semibold text-school-deep">{boldText}</strong>;
+            }
+            return part;
+          })
+        : bulletText;
+      
       elements.push(
         <div key={key} className="flex items-start ml-2 mb-1">
           <span className="text-school-blue mr-2 mt-0.5">•</span>
-          <span className="flex-1">{bulletText}</span>
+          <span className="flex-1">{processedBulletText}</span>
         </div>
       );
     }
     // Handle nested bullet points (with indentation)
     else if (line.match(/^[\s]{4,}[\*•]\s+(.+)$/)) {
       const bulletText = line.replace(/^[\s]{4,}[\*•]\s+(.+)$/, '$1');
+      const processedBulletText = bulletText.includes('**') 
+        ? bulletText.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+            if (part.match(/^\*\*(.+)\*\*$/)) {
+              const boldText = part.replace(/^\*\*(.+)\*\*$/, '$1');
+              return <strong key={`nested-bold-${index}`} className="font-semibold text-school-deep">{boldText}</strong>;
+            }
+            return part;
+          })
+        : bulletText;
+      
       elements.push(
         <div key={key} className="flex items-start ml-6 mb-1">
           <span className="text-school-orange mr-2 mt-0.5">◦</span>
-          <span className="flex-1">{bulletText}</span>
+          <span className="flex-1">{processedBulletText}</span>
         </div>
       );
     }
@@ -56,19 +91,39 @@ function formatMessageContent(content: string, isUser: boolean): JSX.Element {
       if (match) {
         const emoji = match[1];
         const text = match[2];
+        const processedText = text.includes('**') 
+          ? text.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+              if (part.match(/^\*\*(.+)\*\*$/)) {
+                const boldText = part.replace(/^\*\*(.+)\*\*$/, '$1');
+                return <strong key={`emoji-bold-${index}`} className="font-semibold text-school-deep">{boldText}</strong>;
+              }
+              return part;
+            })
+          : text;
+        
         elements.push(
           <div key={key} className="flex items-start ml-2 mb-1">
             <span className="mr-2 mt-0.5">{emoji}</span>
-            <span className="flex-1">{text}</span>
+            <span className="flex-1">{processedText}</span>
           </div>
         );
       }
     }
     // Handle regular lines
     else if (line.trim()) {
+      const processedLine = line.includes('**') 
+        ? line.split(/(\*\*[^*]+\*\*)/).map((part, index) => {
+            if (part.match(/^\*\*(.+)\*\*$/)) {
+              const boldText = part.replace(/^\*\*(.+)\*\*$/, '$1');
+              return <strong key={`regular-bold-${index}`} className="font-semibold text-school-deep">{boldText}</strong>;
+            }
+            return part;
+          })
+        : line;
+      
       elements.push(
         <div key={key} className="mb-1">
-          {line}
+          {processedLine}
         </div>
       );
     }
