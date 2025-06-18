@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Bot } from "lucide-react";
+import { X, Send, Bot, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +20,10 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
   }, [messages, isLoading]);
 
@@ -45,8 +48,8 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-end p-6">
-      <div className="w-96 max-w-[calc(100vw-2rem)] h-[32rem] bg-white rounded-2xl shadow-2xl flex flex-col animate-slide-up">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-end p-4 md:p-6">
+      <div className="w-full md:w-96 max-w-[calc(100vw-2rem)] h-[90vh] md:h-[32rem] bg-white rounded-2xl shadow-2xl flex flex-col animate-slide-up">
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-school-blue to-school-deep text-white p-4 rounded-t-2xl flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -60,14 +63,25 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
               </p>
             </div>
           </div>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white hover:bg-opacity-20 w-8 h-8 rounded-full"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white hover:bg-opacity-20 w-8 h-8 rounded-full"
+              title="Start new conversation"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white hover:bg-opacity-20 w-8 h-8 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -75,10 +89,25 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
 
         {/* Chat Messages */}
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4">
             {/* Welcome Message */}
             <MessageBubble
-              content="Hello! I'm your St. Xavier's School assistant. I can help you with admissions, fees, documents required, and school policies. How can I assist you today?"
+              content="Hello! 👋 I'm your St. Xavier's School assistant. I can help you with:
+
+**Admissions Information**
+• Age eligibility for Nursery & LKG
+• Required documents and procedures
+• Selection process and priorities
+
+**Fee Structure & Payments**
+• Registration fees and payment methods
+• Fee rules and refund policies
+
+**School Policies**
+• Academic programs and grading
+• Rules and regulations
+
+How can I assist you today?"
               isUser={false}
               timestamp={new Date()}
             />
