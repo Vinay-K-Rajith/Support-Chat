@@ -9,7 +9,10 @@ export function getSchoolContext() {
       additionalLanguages: ["Punjabi", "Hindi", "Sanskrit"],
       email: "contactsaintxaviersbathinda@gmail.com",
       website: "www.xavierbathinda.com",
-      transportation: "Not provided by school"
+      transportation: "Not provided by school",
+      history: "Originally an all-boys school, opened to girls in April 1990",
+      mission: "All-round development of the child, especially moral and intellectual qualities",
+      facilities: ["Computer Science", "Classical Dance", "Music", "Dispensaries", "Grihini Schools", "Orphanages", "Balwadis"]
     },
     admissions2025_2026: {
       classes: {

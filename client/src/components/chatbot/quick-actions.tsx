@@ -16,7 +16,7 @@ const quickActions = [
     id: "fees",
     label: "Fee Structure",
     icon: DollarSign,
-    query: "What is the fee structure?",
+    query: "What is the fee structure and payment rules?",
   },
   {
     id: "documents",
@@ -28,7 +28,7 @@ const quickActions = [
     id: "contact",
     label: "Contact Info",
     icon: Phone,
-    query: "How can I contact the school?",
+    query: "How can I contact the school and what are the office hours?",
   },
 ];
 
