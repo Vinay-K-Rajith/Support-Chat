@@ -34,8 +34,10 @@ const quickActions = [
 
 export function QuickActions({ onQuickAction }: QuickActionsProps) {
   return (
-    <div className="p-4 bg-school-light border-b">
-      <p className="text-sm text-school-deep mb-3 font-medium">Quick Actions:</p>
+    <div className="p-2 bg-school-light border-b">
+      <p className="text-sm text-school-deep mb-2 font-medium">
+        Quick Actions:
+      </p>
       <div className="grid grid-cols-2 gap-2">
         {quickActions.map((action) => {
           const IconComponent = action.icon;

@@ -48,70 +48,36 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-end p-4 md:p-6">
-      <div className="w-full md:w-96 max-w-[calc(100vw-2rem)] h-[90vh] md:h-[32rem] bg-white rounded-2xl shadow-2xl flex flex-col animate-slide-up">
-        {/* Chat Header */}
-        <div className="bg-gradient-to-r from-school-blue to-school-deep text-white p-4 rounded-t-2xl flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-semibold">St. Xavier's AI Assistant</h3>
-              <p className="text-xs opacity-90">
-                {isLoading ? "Typing..." : "Online • Ready to help"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => window.location.reload()}
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white hover:bg-opacity-20 w-8 h-8 rounded-full"
-              title="Start new conversation"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white hover:bg-opacity-20 w-8 h-8 rounded-full"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-end"
+      onClick={onClose}
+    >
+      <div
+        className="w-full md:w-[600px] max-w-[calc(100vw-1rem)] h-[95vh] md:h-[40rem] bg-white rounded-3xl shadow-2xl border border-gray-200 flex flex-col animate-slide-up overflow-hidden m-2 md:m-6"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Quick Actions (top, no label) */}
+        <div className="px-6 pt-5 pb-4 bg-blue-50 border-b border-blue-100 rounded-t-3xl">
+          <div className="bg-white border border-blue-100 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+            <QuickActions onQuickAction={handleQuickAction} />
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <QuickActions onQuickAction={handleQuickAction} />
+        {/* Chat Header (no title) */}
+        
+          
+          
+        
 
         {/* Chat Messages */}
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          <div className="space-y-4 pb-4">
+        <ScrollArea className="flex-1 px-6 py-6 bg-gray-50" ref={scrollAreaRef}>
+          <div className="space-y-5 pb-4">
             {/* Welcome Message */}
             <MessageBubble
-              content="Hello! 👋 I'm your St. Xavier's School assistant. I can help you with:
-
-**Admissions Information**
-• Age eligibility for Nursery & LKG
-• Required documents and procedures
-• Selection process and priorities
-
-**Fee Structure & Payments**
-• Registration fees and payment methods
-• Fee rules and refund policies
-
-**School Policies**
-• Academic programs and grading
-• Rules and regulations
-
-How can I assist you today?"
+              content={`Hello! 👋 I'm your St. Xavier's School assistant. I can help you with:\n\n**Admissions Information**\n• Age eligibility for Nursery & LKG\n• Required documents and procedures\n• Selection process and priorities\n\n**Fee Structure & Payments**\n• Registration fees and payment methods\n• Fee rules and refund policies\n\n**School Policies**\n• Academic programs and grading\n• Rules and regulations\n\nHow can I assist you today?`}
               isUser={false}
               timestamp={new Date()}
             />
-            
             {messages.map((msg) => (
               <MessageBubble
                 key={msg.id}
@@ -120,34 +86,33 @@ How can I assist you today?"
                 timestamp={msg.timestamp ? new Date(msg.timestamp) : new Date()}
               />
             ))}
-            
             {isLoading && <TypingIndicator />}
           </div>
         </ScrollArea>
 
         {/* Chat Input */}
-        <div className="p-4 border-t bg-white rounded-b-2xl">
-          <div className="flex items-center space-x-2">
+        <div className="px-6 py-5 border-t bg-white rounded-b-3xl">
+          <div className="flex items-center space-x-3">
             <Input
               type="text"
               placeholder="Ask about admissions, fees, documents..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1 border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-school-blue focus:ring-2 focus:ring-school-blue focus:ring-opacity-20"
+              className="flex-1 border-gray-300 rounded-full px-5 py-3 text-base focus:outline-none focus:border-school-blue focus:ring-2 focus:ring-school-blue focus:ring-opacity-20 shadow-sm"
               disabled={isLoading}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!message.trim() || isLoading}
-              className="bg-school-blue hover:bg-school-deep text-white w-10 h-10 rounded-full"
+              className="bg-school-blue hover:bg-school-deep text-white w-12 h-12 rounded-full shadow"
               size="icon"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </Button>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Powered by Google Gemini AI
+          <p className="text-xs text-gray-400 mt-3 text-center">
+            Powered by Entab
           </p>
         </div>
       </div>
