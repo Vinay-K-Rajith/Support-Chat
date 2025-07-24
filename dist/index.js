@@ -730,26 +730,27 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path2 from "path";
 import { fileURLToPath } from "url";
+var posixPath = path2.posix;
 var __filename = fileURLToPath(import.meta.url);
-var __dirname = path2.dirname(__filename);
+var __dirname = posixPath.dirname(__filename);
 var vite_config_default = defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path2.resolve(__dirname, "client", "src"),
-      "@shared": path2.resolve(__dirname, "shared"),
-      "@assets": path2.resolve(__dirname, "attached_assets")
+      "@": posixPath.resolve(__dirname, "client", "src"),
+      "@shared": posixPath.resolve(__dirname, "shared"),
+      "@assets": posixPath.resolve(__dirname, "attached_assets")
     }
   },
-  root: path2.resolve(__dirname, "client"),
+  root: posixPath.resolve(__dirname, "client"),
   build: {
-    outDir: path2.resolve(__dirname, "dist"),
+    outDir: posixPath.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path2.resolve(__dirname, "client/index.html"),
-        widget: path2.resolve(__dirname, "client/widget.html"),
-        embed: path2.resolve(__dirname, "client/embed.html")
+        main: posixPath.resolve(__dirname, "client/index.html"),
+        widget: posixPath.resolve(__dirname, "client/widget.html"),
+        embed: posixPath.resolve(__dirname, "client/embed.html")
       },
       output: {
         manualChunks: {
@@ -771,6 +772,7 @@ var vite_config_default = defineConfig({
 // server/vite.ts
 import { nanoid as nanoid2 } from "nanoid";
 var viteLogger = createLogger();
+var posixPath2 = path3.posix;
 function log(message, source = "express") {
   const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -803,7 +805,7 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path3.resolve(
+      const clientTemplate = posixPath2.resolve(
         import.meta.dirname,
         "..",
         "client",
@@ -823,7 +825,7 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path3.resolve(import.meta.dirname, "..");
+  const distPath = posixPath2.resolve(import.meta.dirname, "..");
   if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -831,7 +833,7 @@ function serveStatic(app2) {
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path3.resolve(distPath, "index.html"));
+    res.sendFile(posixPath2.resolve(distPath, "index.html"));
   });
 }
 
