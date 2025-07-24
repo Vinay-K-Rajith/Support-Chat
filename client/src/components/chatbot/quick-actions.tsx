@@ -1,4 +1,4 @@
-import { GraduationCap, DollarSign, FileText, Phone } from "lucide-react";
+import { FileText, FileSpreadsheet, AlertCircle, Users, ReceiptText, BadgeCheck, RefreshCcw, ListOrdered, FileCheck2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QuickActionsProps {
@@ -7,28 +7,64 @@ interface QuickActionsProps {
 
 const quickActions = [
   {
-    id: "admissions",
-    label: "Admissions",
-    icon: GraduationCap,
-    query: "Tell me about admissions for 2025-2026",
+    id: "fee-not-reflecting",
+    label: "Fee Not Reflecting",
+    icon: AlertCircle,
+    query: "Parent has posted fee but not reflecting in ERP.",
   },
   {
-    id: "fees",
-    label: "Fee Structure",
-    icon: DollarSign,
-    query: "What is the fee structure and payment rules?",
+    id: "concession-new-student",
+    label: "Concession for New Student",
+    icon: BadgeCheck,
+    query: "Concession for New Students",
   },
   {
-    id: "documents",
-    label: "Documents",
+    id: "fine-setting",
+    label: "Fine Setting",
+    icon: RefreshCcw,
+    query: "How to do fine setting?",
+  },
+  {
+    id: "defaulter-installment",
+    label: "Defaulter Data (Installment)",
+    icon: ListOrdered,
+    query: "How to check defaulter data of instalment wise?",
+  },
+  {
+    id: "online-payment-enable",
+    label: "Enable Online Payment",
+    icon: FileCheck2,
+    query: "How can we enable online payment for parent?",
+  },
+  {
+    id: "late-fine-waive",
+    label: "Waive Late Fine (New Student)",
+    icon: BadgeCheck,
+    query: "How can we waive off late fine for new student?",
+  },
+  {
+    id: "transfer-fee-setting",
+    label: "Transfer Fee Setting",
+    icon: RefreshCcw,
+    query: "How can we transfer this year fee setting in next upcoming academic session?",
+  },
+  {
+    id: "concession-entry",
+    label: "Concession Entry",
+    icon: BadgeCheck,
+    query: "How to do the concession entry",
+  },
+  {
+    id: "fee-not-posted",
+    label: "Fee Not Posted",
+    icon: AlertCircle,
+    query: "Fee is not posted in the system against the student",
+  },
+  {
+    id: "receipt-not-printing",
+    label: "Receipt Not Printing",
     icon: FileText,
-    query: "What documents are required for admission?",
-  },
-  {
-    id: "contact",
-    label: "Contact Info",
-    icon: Phone,
-    query: "How can I contact the school and what are the office hours?",
+    query: "In the Parent Portal, the fee receipt is not printing.",
   },
 ];
 

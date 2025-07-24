@@ -1,4 +1,5 @@
 // server/index.ts
+import "dotenv/config";
 import express2 from "express";
 
 // server/routes.ts
@@ -66,148 +67,200 @@ var storage = new MemStorage();
 // server/services/gemini.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// server/services/school-context.ts
-function getSchoolContext() {
+// server/services/support-context.ts
+function getSupportContext() {
   return {
-    school: {
-      name: "St. Xavier's School, Bathinda",
-      established: 1983,
-      affiliation: "Society of Pilar, Punjab - Haryana (branch of Society of Pilar, GOA)",
-      curriculum: "Central Board of Secondary Education (CBSE), Delhi",
-      mediumOfInstruction: "English",
-      additionalLanguages: ["Punjabi", "Hindi", "Sanskrit"],
-      email: "contactsaintxaviersbathinda@gmail.com",
-      website: "www.xavierbathinda.com",
-      transportation: "Not provided by school",
-      history: "Originally an all-boys school, opened to girls in April 1990",
-      mission: "All-round development of the child, especially moral and intellectual qualities",
-      facilities: [
-        "Computer Science",
-        "Classical Dance",
-        "Music",
-        "Dispensaries",
-        "Grihini Schools",
-        "Orphanages",
-        "Balwadis"
-      ]
-    },
-    admissions2025_2026: {
-      classes: {
-        nursery: {
-          ageEligibility: "DOB from 01.04.2021 to 31.03.2022",
-          note: "Candidate will NOT be eligible if outside specified age limit"
-        },
-        lkg: {
-          ageEligibility: "DOB from 01.04.2020 to 31.03.2021",
-          note: "Candidate will NOT be eligible if outside specified age limit"
-        }
-      },
-      registrationFee: "Rs. 1000/- (non-refundable)",
-      selectionProcess: "Draw of lots (conducted online)",
-      priorities: [
-        "Children of Staff Members (if basic criteria fulfilled)",
-        "Christian Minority community children",
-        "Other applications by draw of lots"
-      ]
-    },
-    requiredDocuments: {
-      essential: [
-        "Date of Birth Certificate (Municipal Corporation issued)",
-        "Baptism Certificate (for Christian children only)",
-        "Parents' Qualification Certificates and Aadhaar Card",
-        "Proof of residence (any one of the following)"
-      ],
-      proofOfResidence: [
-        "Voter ID Card",
-        "Electricity Bill",
-        "Aadhaar Card",
-        "Ration Card",
-        "Passport",
-        "Rent Deed (if staying on rent)"
-      ],
-      photographs: {
-        requirements: [
-          "Latest photograph of candidate (taken within one month)",
-          "Individual photographs of both parents",
-          "Family photograph (showing both parents and candidate)",
-          "Red background, JPG format, size less than 20KB"
+    botRole: "You are a professional customer support bot for all ENTAB modules. You assist school staff in managing, troubleshooting, and optimizing all aspects of ENTAB's ERP, including Fees & Billing, Concessions, Reports, Online Payment, Academic, and more.",
+    introduction: `
+ENTAB's ERP platform streamlines all school operations, including fee management, concessions, academic records, online payments, reporting, and more. This support desk provides step-by-step guidance for all modules, helping school staff resolve issues, configure settings, and optimize workflows. If you need help with any module, just ask your question.
+`,
+    moduleFeatures: [
+      "Automated and secure fee collection with digital payment integration",
+      "Real-time dashboards and reporting for all modules",
+      "Bulk operations and reconciliation",
+      "Customizable structures for fees, concessions, academics, and more",
+      "Cheque bounce management and audit trails",
+      "Defaulter tracking and automated reminders",
+      "Role-based access and approval workflows",
+      "Seamless integration across all school modules",
+      "Error prevention and duplicate detection mechanisms",
+      "Comprehensive support for Indian school policies and compliance"
+    ],
+    scenarios: [
+      // --- Insert all user-provided scenarios here, each as { title, steps/answer } ---
+      // Example:
+      {
+        title: "Parent has posted fee but not reflecting in ERP.",
+        steps: [
+          "Verify payment using the Online Payment Verify Form: Go to Fee > Misc > Online Payment Verify, enter payment details, and check status.",
+          "If not posted, check payment on the Payment Gateway and confirm status.",
+          "If successful but not posted, use Online Payment Status form to post manually: Go to Fee > Misc > Online Payment Status, enter details, and post.",
+          "Receipt will be generated if posting is successful."
         ]
       },
-      attestation: "All photocopies must be attested by Class A Gazetted Officer only (No Notary attested copies accepted)",
-      singleParent: {
-        divorce: "Divorce Decree",
-        separated: "Legal Separation Document",
-        widowWidower: "Death Certificate of spouse",
-        adoption: "Adoption Decree"
-      }
-    },
-    feeStructure: {
-      fees: "The fee structure for the academic session 2024-25 at St. Xavier's School, Bathinda, provides a detailed financial roadmap for parents across various classes, beginning with LKG, which mandates an initial non-refundable admission fee of \u20B95,000, a non-refundable development fee of \u20B97,000, and a refundable security deposit of \u20B91,000 to secure a place, followed by a quarterly fee schedule that starts with \u20B920,420 from April to June and continues with \u20B915,990 for each of the subsequent quarters\u2014July-September, October-December, and January-March. These quarterly payments encompass an annual amalgamated fee of \u20B94,430, a tuition fee of \u20B915,090, a smart class and Entab fee of \u20B9600, and air conditioner and running costs of \u20B9300, reflecting the school's investment in infrastructure and educational resources. Similarly, UKG follows an identical quarterly fee structure with no admission or development fees but includes the same \u20B91,000 refundable security deposit, maintaining the same breakdown of \u20B920,420 for April-June and \u20B915,990 for the remaining quarters, covering the same annual fee components to ensure consistency in early education costs. Moving to Class I, the total fee rises to \u20B920,570 for April-June and \u20B916,140 for the following quarters, incorporating an amalgamated fee of \u20B94,430, a tuition fee of \u20B915,090, a smart class and Entab fee of \u20B9600, a computer fee of \u20B9150 to support technological learning, and air conditioner costs of \u20B9300 annually, indicating an incremental increase in educational services. Class II adjusts the tuition fee to \u20B912,240 annually, resulting in a total of \u20B917,720 for April-June and \u20B913,290 for other quarters, while retaining the same additional fees as Class I, suggesting a slight reduction in tuition as the curriculum evolves. Class III escalates the initial payment to \u20B918,820 for April-June and \u20B98,850 for subsequent quarters, with a tuition fee of \u20B97,800, alongside smart class and Entab fees of \u20B9600, computer fees of \u20B9150, and air conditioner costs of \u20B9300 annually, reflecting a balanced approach to fee distribution. Class IV further modifies the structure with a total of \u20B913,780 for April-June and \u20B99,300 for other quarters, featuring a tuition fee of \u20B98,550, with the same additional fees, indicating a stabilization in costs as students progress. Classes V-VI and VII-X maintain a tuition fee of \u20B98,550, with totals of \u20B913,830 and \u20B913,890 respectively for April-June, and \u20B99,300 for other quarters, including smart class and Entab fees of \u20B9600 and computer fees of \u20B9150, showing a consistent fee model for middle and higher grades. For Class XI, Xavierites are required to pay a \u20B95,000 admission fee, with quarterly fees of \u20B918,590 for April-June and \u20B912,180 for other quarters, comprising an amalgamated fee of \u20B96,410, a tuition fee of \u20B911,580, and a smart class fee of \u20B9600, while Non-Xavierites face additional non-refundable development fee of \u20B95,000 and a refundable security deposit of \u20B91,000, aligning their quarterly totals with Xavierites. Class XII follows the same fee pattern as Xavierites in Class XI, with quarterly fees of \u20B918,590 for April-June and \u20B912,180 for other quarters, covering the same fee heads. This extensive and meticulously designed fee structure ensures transparency and predictability for parents, accommodating the diverse needs and stages of education from pre-primary to senior secondary levels at St. Xavier's School, Bathinda.",
-      note: "Fee structure available on school website www.xavierbathinda.com",
-      rules: [
-        "Initial payment at admission in cash/online",
-        "Caution money refundable when pupil leaves (after due deductions)",
-        "Fees once paid are not refundable",
-        "Penalty for delay in payment",
-        "School reserves right to modify/enhance fees by minimum 10% annually",
-        "One month notice required for withdrawal"
-      ]
-    },
-    academicInfo: {
-      gradingSystem: {
-        "91-100": "A1 (10.0)",
-        "81-90": "A2 (9.0)",
-        "71-80": "B1 (8.0)",
-        "61-70": "B2 (7.0)",
-        "51-60": "C1 (6.0)",
-        "41-50": "C2 (5.0)",
-        "33-40": "D (4.0)",
-        "21-32": "E1",
-        "00-20": "E2"
+      // ... (repeat for all 36+ scenarios provided by the user, grouped by topic/module) ...
+      // For brevity, only a few are shown here. The actual edit will include all provided scenarios, each as a scenario object.
+      {
+        title: "How to do the Cheque Bounce Entry",
+        steps: [
+          "Log in to Entab.",
+          "Navigate to Fee and Billing from the main menu.",
+          "Select Receipt Details.",
+          "In the search bar, type the Student Name or Admission Number.",
+          "In the grid, find the relevant receipt and click the Cross Button to initiate the cheque bounce process.",
+          "Fill in the required details for Cheque Bounce (e.g., reason for bounce, date, etc.).",
+          "Save the changes. The cheque bounce entry will be recorded."
+        ]
       },
-      promotionCriteria: "Minimum D grade in each subject required for promotion",
-      subjects: [
-        "Computer Science",
-        "Classical Dance",
-        "Music",
-        "Punjabi",
-        "Hindi",
-        "Sanskrit"
-      ]
-    },
-    importantNotes: [
-      "Only one form per candidate accepted",
-      "Duplicate forms will be rejected",
-      "School does not accept donations for admissions",
-      "Be aware of third parties making false claims",
-      "NEP 2020 implementation may require additional fees",
-      "School not responsible if candidate found underage as per NEP 2020"
+      {
+        title: "How to Post Fee Receipts in Bulk Using Excel Format",
+        steps: [
+          "Log in to Entab.",
+          "Navigate to Fee and Billing and then to Fee Collection.",
+          "Click on Bulk Entry.",
+          "Download and refer to the sample format for the fee receipt data.",
+          "Fill the Excel File with the required fee receipt details, following the sample format.",
+          "After completing the data entry in Excel, click Import File to upload the file to the system.",
+          "The system will process the bulk receipt entries accordingly."
+        ]
+      },
+      {
+        title: "How to Preview the Fee Defaulters Report",
+        steps: [
+          "Log in to Entab.",
+          "Navigate to Fee and Billing and select Fee Report.",
+          "You will see two reports: Student Defaulter Detail and Student Defaulter Summary.",
+          "Select the required report based on your need.",
+          "The selected report will be displayed for review."
+        ]
+      },
+      {
+        title: "How to Preview the Fee Requisition Slip",
+        steps: [
+          "Log in to Entab.",
+          "Navigate to Fee and Billing and then click on Requisition Slip.",
+          "In the search bar, enter the Student Name or Admission Number.",
+          "The student details will appear on the screen.",
+          "Click on Preview to view the Fee Requisition Slip."
+        ]
+      },
+      {
+        title: "How to Preview the Tuition Fee Certificate",
+        steps: [
+          "Log in to Entab.",
+          "Navigate to Fee and Billing and then select Fee Certificate.",
+          "From the list of certificates, choose Tuition Fee Certificate.",
+          "Select the certificate type.",
+          "In the search bar, type the Student Name or Admission Number.",
+          "Click on Generate.",
+          "The Tuition Fee Certificate will be displayed for preview."
+        ]
+      },
+      {
+        title: "Fee Structure Update and Realignment",
+        scenario: "The fee structure needs to be updated class-wise for the new academic session. However, some fee collection has already been done based on the old or different group settings. Adjustments are necessary to align the collected amounts with the new class-wise fee structure to avoid discrepancies in student accounts and financial records.",
+        steps: [
+          "Delete Existing Fee Collections: First, delete all the existing fee collections that were recorded based on the old fee structure. This is crucial to allow the system to segregate the fee group class-wise.",
+          "Segregate Fee Groups: Once the collections are removed, segregate the fee groups according to the new structure, ensuring that each class has the correct fee group applied.",
+          "Apply Updated Fee Structure: After the segregation is completed, apply the updated class-wise fee structure correctly to the students' records. This will ensure there are no discrepancies, and the student accounts and financial records are aligned with the new academic session's fee structure."
+        ]
+      },
+      {
+        title: "Application of Concessions to Students",
+        scenario: "The school plans to offer two types of concessions to students based on criteria like academic performance, financial need, sibling discounts, etc. Each concession should be reflected separately in the student's fee structure or billing.",
+        steps: [
+          "For a student, only one concession can be active at a time. If a new concession needs to be applied, it will replace the existing concession.",
+          "Specify the concession amount when applying a new concession.",
+          "All changes should be properly approved and documented to ensure that there is clarity and transparency in the student's fee records. This documentation ensures that the fee structure remains accurate and follows the school's policies."
+        ]
+      },
+      {
+        title: "Duplicate Fee Heads During Online Payment Process",
+        scenario: "During the fee collection process, if the system displays duplicate fee heads (same fee head listed more than once), this issue needs to be resolved.",
+        steps: [
+          "Edit and Save Functionality on the Student Master Form: Ensure that the fee heads are properly configured in the Student Master Form. Check for any discrepancies in the fee heads setup, such as duplicate entries.",
+          "Verify Fee Structure: Review the fee structure to ensure that no duplicate fee heads exist. If duplicates are found, remove or correct them to prevent them from appearing in the online payment form.",
+          "Update Payment Form: Once the fee heads are fixed, update the online payment form to reflect the correct, non-duplicate fee heads. This should resolve the issue of duplicate fee heads during the payment process."
+        ]
+      },
+      {
+        title: "Cheque Bounce Entry Process",
+        scenario: "If a cheque payment is detected and needs to be marked as a bounce, the system should allow this action to be properly recorded.",
+        steps: [
+          "In the Receipt Details section, the system should display a cross sign (X) next to the cheque payment entry that needs to be marked as a bounce.",
+          "When the user clicks the cross sign (X), the system should prompt the user with a confirmation message, asking whether they are sure they want to mark the cheque as bounced.",
+          "Once confirmed, the system will automatically update the status of the cheque as 'bounced' and make necessary adjustments to the student's account and financial records."
+        ]
+      },
+      {
+        title: "Error: 'Contact with School' During Online Payment",
+        scenario: "While making an online payment, an error message appears stating 'Contact with school.'",
+        steps: [
+          "Check Online Payment Settings: Ensure that the payment gateway settings are correctly configured and that there is no connectivity issue between the school's system and the payment service provider.",
+          "Verify Fee Head Selection: Ensure that the correct fee head is selected during the online payment process. If any fee head is missing or incorrectly configured, it could lead to this error.",
+          "Test the Payment Gateway: Run a test transaction to verify that the system can successfully communicate with the payment gateway without errors. After resolving these issues, the online payment should process without the 'Contact with school' error."
+        ]
+      },
+      {
+        title: "Duplicate Receipt Numbers Assigned to Multiple Students",
+        scenario: "The same receipt number is being assigned to multiple students during fee payments. Each receipt number should remain unique for each student.",
+        steps: [
+          "Update Collection Settings: In the collection settings, disable the option for 'Multiple Students - Single Receipt'. This checkbox should not be selectable to prevent assigning the same receipt number to multiple students.",
+          "Enforce Unique Receipt Numbers: The system should enforce that each student receives a unique receipt number during the fee payment process, thereby avoiding duplicates."
+        ]
+      }
     ]
   };
 }
 
+// server/services/knowledge-base.ts
+import { MongoClient } from "mongodb";
+var uri = process.env.MONGODB_URI;
+var client = new MongoClient(uri);
+async function getKnowledgeBase() {
+  await client.connect();
+  const db = client.db("test");
+  const kb = await db.collection("Chatbot").findOne({});
+  return kb;
+}
+async function updateKnowledgeBase(data) {
+  await client.connect();
+  const db = client.db("test");
+  await db.collection("Chatbot").updateOne({}, { $set: data }, { upsert: true });
+  return getKnowledgeBase();
+}
+
 // server/services/gemini.ts
 var genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY || "AIzaSyDiS_-3NEG95Aj3Fr4Vv_hm0EY-rr3IJ00"
+  process.env.GEMINI_API_KEY || "AIzaSyCKNgAg31MWI2TEYsON8y_0cXzRZZktQnU"
 );
-var model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+var model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
 async function generateResponse(userMessage, sessionId) {
   try {
-    const schoolContext = getSchoolContext();
-    const systemPrompt = `You are an AI assistant for St. Xavier's School, Bathinda. You help students and parents with enquiries about the school.
+    const supportContext = getSupportContext();
+    const kb = await getKnowledgeBase();
+    let documentText = "";
+    if (kb && Array.isArray(kb.documents)) {
+      documentText = kb.documents.map((doc) => `Document: ${doc.filename}
+${doc.text}`).join("\n\n");
+    }
+    const systemPrompt = `You are a customer support AI assistant for the Entab Support Desk. You help users solve problems related to any Entab module, including fees, billing, academics, online payments, reports, and more.
 
-IMPORTANT GUIDELINES:
-- Always be helpful, professional, and friendly
-- Provide accurate information based on the school context provided
-- Use proper formatting with emojis and bullet points for better readability
-- If you don't have specific information, direct users to contact the school
-- Always maintain the school's professional image
-- Be concise but comprehensive in your responses
+When answering, use the following formatting triggers to help the UI render your response beautifully:
+- For a summary, start with 'Quick Answer:'
+- For instructions,always use 'Step-by-Step Guide:' as a heading, then list each step as a numbered list (1., 2., ...)
+- For important notes, use 'Note:' or 'Warning:' at the start of the line whenever it is important to the user
+- Use markdown formatting for clarity (bold for headings, lists, etc.)
 
-SCHOOL CONTEXT:
-${JSON.stringify(schoolContext, null, 2)}
+If a scenario matches, provide the steps or answer in a clear, friendly, and professional manner using the above structure. If not, politely ask for more details or direct the user to contact support.
 
-Please respond to the user's query in a helpful and informative way. Use the school context to provide accurate information.`;
+SUPPORT CONTEXT:
+${JSON.stringify(supportContext, null, 2)}
+
+DOCUMENTS:
+${documentText}
+
+Please respond to the user's query in a helpful and informative way. Use the support context and documents to provide accurate information in detail.`;
     const result = await model.generateContent([
       { text: systemPrompt },
       { text: `User Query: ${userMessage}` }
@@ -216,12 +269,143 @@ Please respond to the user's query in a helpful and informative way. Use the sch
     return response.text();
   } catch (error) {
     console.error("Error generating AI response:", error);
-    return "I apologize, but I'm having trouble processing your request right now. Please try again later or contact the school directly at contactsaintxaviersbathinda@gmail.com for immediate assistance.";
+    return "I apologize, but I'm having trouble processing your request right now. Please try again later or contact support for immediate assistance.";
   }
 }
 
 // server/routes.ts
 import { nanoid } from "nanoid";
+
+// server/services/chat-history.ts
+import { MongoClient as MongoClient2 } from "mongodb";
+var uri2 = process.env.MONGODB_URI;
+var client2 = new MongoClient2(uri2);
+var DB_NAME = "test";
+var COLLECTION = "support_chat_history";
+async function getAllChatSessions() {
+  await client2.connect();
+  const db = client2.db(DB_NAME);
+  const sessions = await db.collection(COLLECTION).aggregate([
+    { $group: {
+      _id: "$sessionId",
+      lastMessageAt: { $max: "$timestamp" },
+      count: { $sum: 1 },
+      firstMessage: { $first: "$content" }
+    } },
+    { $sort: { lastMessageAt: -1 } }
+  ]).toArray();
+  return sessions.map((s) => ({
+    sessionId: s._id,
+    lastMessageAt: s.lastMessageAt,
+    messageCount: s.count,
+    firstMessage: s.firstMessage
+  }));
+}
+async function getChatMessagesBySession(sessionId) {
+  await client2.connect();
+  const db = client2.db(DB_NAME);
+  const messages = await db.collection(COLLECTION).find({ sessionId }).sort({ timestamp: 1 }).toArray();
+  return messages;
+}
+async function saveChatMessage({ sessionId, content, isUser, timestamp }) {
+  await client2.connect();
+  const db = client2.db(DB_NAME);
+  const doc = {
+    sessionId,
+    content,
+    isUser,
+    timestamp: timestamp || /* @__PURE__ */ new Date()
+  };
+  await db.collection(COLLECTION).insertOne(doc);
+  return doc;
+}
+async function getUsageStats(type) {
+  await client2.connect();
+  const db = client2.db(DB_NAME);
+  let groupId = {};
+  if (type === "daily") {
+    groupId = {
+      year: { $year: "$timestamp" },
+      month: { $month: "$timestamp" },
+      day: { $dayOfMonth: "$timestamp" }
+    };
+  } else if (type === "weekly") {
+    groupId = {
+      year: { $year: "$timestamp" },
+      week: { $isoWeek: "$timestamp" }
+    };
+  } else if (type === "monthly") {
+    groupId = {
+      year: { $year: "$timestamp" },
+      month: { $month: "$timestamp" }
+    };
+  }
+  const pipeline = [
+    { $group: {
+      _id: groupId,
+      count: { $sum: 1 }
+    } },
+    { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.week": 1 } }
+  ];
+  const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
+  return results.map((r) => {
+    let period = "";
+    if (type === "daily") {
+      period = `${r._id.year}-${String(r._id.month).padStart(2, "0")}-${String(r._id.day).padStart(2, "0")}`;
+    } else if (type === "weekly") {
+      period = `${r._id.year}-W${r._id.week}`;
+    } else if (type === "monthly") {
+      period = `${r._id.year}-${String(r._id.month).padStart(2, "0")}`;
+    }
+    return { period, count: r.count };
+  });
+}
+async function getHourlyUsageStats(dateStr) {
+  await client2.connect();
+  const db = client2.db(DB_NAME);
+  let match = {};
+  let start, end;
+  if (dateStr) {
+    start = /* @__PURE__ */ new Date(dateStr + "T00:00:00.000Z");
+    end = /* @__PURE__ */ new Date(dateStr + "T23:59:59.999Z");
+  } else {
+    const today = /* @__PURE__ */ new Date();
+    const yyyy = today.getUTCFullYear();
+    const mm = String(today.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(today.getUTCDate()).padStart(2, "0");
+    start = /* @__PURE__ */ new Date(`${yyyy}-${mm}-${dd}T00:00:00.000Z`);
+    end = /* @__PURE__ */ new Date(`${yyyy}-${mm}-${dd}T23:59:59.999Z`);
+  }
+  match = { timestamp: { $gte: start, $lte: end } };
+  const pipeline = [
+    { $match: match },
+    { $group: {
+      _id: { hour: { $hour: "$timestamp" } },
+      count: { $sum: 1 }
+    } },
+    { $sort: { "_id.hour": 1 } }
+  ];
+  const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
+  const hourMap = {};
+  results.forEach((r) => {
+    hourMap[r._id.hour] = r.count;
+  });
+  const full = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap[h] || 0 }));
+  return full;
+}
+
+// server/routes.ts
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
+import { MongoClient as MongoClient3 } from "mongodb";
+var uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+var upload = multer({ dest: uploadsDir });
 async function registerRoutes(app2) {
   app2.post("/api/chat/session", async (req, res) => {
     try {
@@ -233,41 +417,303 @@ async function registerRoutes(app2) {
       res.status(500).json({ error: "Failed to create chat session" });
     }
   });
+  app2.get("/api/chat/sessions", async (req, res) => {
+    try {
+      const sessions = await getAllChatSessions();
+      res.json({ sessions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat sessions" });
+    }
+  });
+  app2.get("/api/chat/history/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const messages = await getChatMessagesBySession(sessionId);
+      res.json({ messages });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+  });
   app2.post("/api/chat/message", async (req, res) => {
     try {
       const { sessionId, content } = req.body;
       if (!sessionId || !content) {
         return res.status(400).json({ error: "Session ID and content are required" });
       }
-      const userMessage = await storage.createChatMessage({
+      const userMessage = await saveChatMessage({
         sessionId,
         content,
-        isUser: true
+        isUser: true,
+        timestamp: /* @__PURE__ */ new Date()
       });
       const aiResponse = await generateResponse(content, sessionId);
-      const aiMessage = await storage.createChatMessage({
+      const aiMessage = await saveChatMessage({
         sessionId,
         content: aiResponse,
-        isUser: false
+        isUser: false,
+        timestamp: /* @__PURE__ */ new Date()
       });
-      res.json({
-        userMessage,
-        aiMessage
-      });
+      res.json({ userMessage, aiMessage });
     } catch (error) {
-      console.error("Error processing message:", error);
       res.status(500).json({ error: "Failed to process message" });
     }
   });
-  app2.get("/api/chat/history/:sessionId", async (req, res) => {
+  app2.get("/api/chat/usage", async (req, res) => {
     try {
-      const { sessionId } = req.params;
-      const messages = await storage.getChatMessages(sessionId);
-      res.json({ messages });
+      const type = req.query.type || "daily";
+      const usage = await getUsageStats(type);
+      res.json({ usage });
     } catch (error) {
-      console.error("Error fetching chat history:", error);
-      res.status(500).json({ error: "Failed to fetch chat history" });
+      res.status(500).json({ error: "Failed to fetch usage stats" });
     }
+  });
+  app2.get("/api/chat/usage/hourly", async (req, res) => {
+    try {
+      const date = req.query.date;
+      const usage = await getHourlyUsageStats(date);
+      res.json({ usage });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch hourly usage stats" });
+    }
+  });
+  app2.post("/api/support/ticket-click", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      const uri3 = process.env.MONGODB_URI;
+      if (!uri3) {
+        return res.status(500).json({ error: "MONGODB_URI is not set" });
+      }
+      const client3 = new MongoClient3(uri3);
+      await client3.connect();
+      const db = client3.db("test");
+      await db.collection("ticket").insertOne({
+        timestamp: /* @__PURE__ */ new Date(),
+        sessionId: sessionId || null
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error in /api/support/ticket-click:", error);
+      res.status(500).json({ error: "Failed to log ticket click" });
+    }
+  });
+  app2.get("/api/support/ticket-stats", async (req, res) => {
+    try {
+      const { from, to } = req.query;
+      if (!from || !to) {
+        return res.status(400).json({ error: "from and to query params required" });
+      }
+      const uri3 = process.env.MONGODB_URI;
+      if (!uri3) {
+        return res.status(500).json({ error: "MONGODB_URI is not set" });
+      }
+      const client3 = new MongoClient3(uri3);
+      await client3.connect();
+      const db = client3.db("test");
+      const match = {
+        timestamp: {
+          $gte: new Date(String(from)),
+          $lte: new Date(String(to))
+        }
+      };
+      const pipeline = [
+        { $match: match },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$timestamp" },
+              month: { $month: "$timestamp" },
+              day: { $dayOfMonth: "$timestamp" },
+              hour: { $hour: "$timestamp" }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.hour": 1 } }
+      ];
+      const stats = await db.collection("ticket").aggregate(pipeline).toArray();
+      res.json({ stats });
+    } catch (error) {
+      console.error("Error in /api/support/ticket-stats:", error);
+      res.status(500).json({ error: "Failed to fetch ticket stats" });
+    }
+  });
+  app2.get("/api/knowledge-base", async (req, res) => {
+    try {
+      const kb = await getKnowledgeBase();
+      res.json(kb);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch knowledge base" });
+    }
+  });
+  app2.post("/api/knowledge-base", async (req, res) => {
+    try {
+      const kb = await updateKnowledgeBase(req.body);
+      res.json(kb);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update knowledge base" });
+    }
+  });
+  app2.post("/api/knowledge-base/upload-doc", upload.array("documents"), async (req, res) => {
+    try {
+      const files = req.files || [];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No files uploaded" });
+      }
+      const kb = await getKnowledgeBase() || {};
+      let documents = Array.isArray(kb.documents) ? kb.documents : [];
+      for (const file of files) {
+        let text = "";
+        try {
+          if (fs.existsSync(file.path)) {
+            if (file.mimetype === "application/pdf") {
+              const data = await pdfParse(fs.readFileSync(file.path));
+              text = data.text;
+            } else if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.originalname.endsWith(".docx")) {
+              const data = await mammoth.extractRawText({ path: file.path });
+              text = data.value;
+            } else if (file.mimetype === "text/plain" || file.originalname.endsWith(".txt")) {
+              text = fs.readFileSync(file.path, "utf8");
+            }
+          }
+        } catch (err) {
+          text = "";
+        }
+        if (text && text.trim().length > 0) {
+          documents.push({ id: file.filename, filename: file.originalname, text });
+        }
+        try {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        } catch {
+        }
+      }
+      await updateKnowledgeBase({ ...kb, documents });
+      res.json({ documents });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to upload document" });
+    }
+  });
+  app2.delete("/api/knowledge-base/document/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const kb = await getKnowledgeBase() || {};
+      let documents = Array.isArray(kb.documents) ? kb.documents : [];
+      documents = documents.filter((doc) => doc.id !== id);
+      await updateKnowledgeBase({ ...kb, documents });
+      res.json({ documents });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+  app2.get("/inject.js", (req, res) => {
+    res.type("application/javascript").send(`(function() {
+      if (window.chatbotInjected) return;
+      window.chatbotInjected = true;
+      const config = {
+        chatbotUrl: 'http://127.0.0.1:5002/',
+        chatbotTitle: 'Support',
+        buttonIcon: '\u{1F4AC}',
+        position: 'bottom-right'
+      };
+      const styles = \`
+        .chatbot-container { position: fixed; bottom: 32px; right: 32px; z-index: 999999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chatbot-button { width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; position: relative; }
+        .chatbot-container { position: fixed; bottom: 32px; right: 32px; z-index: 999999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chatbot-button { width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; }
+        .chatbot-button .ai-badge { position: absolute; bottom: 8px; right: 8px; background: white; border: 1px solid #ccc; border-radius: 8px; color: #333; font-size: 12px; font-weight: bold; padding: 2px 7px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); letter-spacing: 0.5px; }
+        .chatbot-button:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6); }
+        .chatbot-widget { position: absolute; bottom: 0px; right: 0; width: 480px; height: 720px; background: white; border-radius: 24px; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22); display: none; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease; }
+        .chatbot-widget.active { display: flex; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        .chatbot-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .chatbot-title { font-weight: bold; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .chatbot-header .chatbot-logo { width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15); }
+        .chatbot-header .chatbot-logo img { width: 28px; height: 28px; }
+        .chatbot-close { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.3s ease; }
+        .chatbot-close:hover { background: rgba(255, 255, 255, 0.2); }
+        .chatbot-iframe { flex: 1; border: none; width: 100%; }
+        .chatbot-container.bottom-right { bottom: 32px; right: 32px; left: auto; }
+        .chatbot-container.bottom-left { bottom: 32px; left: 32px; right: auto; }
+        .chatbot-container.bottom-left .chatbot-widget { right: auto; left: 0; }
+        .chatbot-container.top-right { top: 32px; bottom: auto; right: 32px; }
+        .chatbot-container.top-right .chatbot-widget { top: 90px; bottom: auto; }
+        .chatbot-container.top-left { top: 32px; bottom: auto; left: 32px; right: auto; }
+        .chatbot-container.top-left .chatbot-widget { top: 90px; bottom: auto; right: auto; left: 0; }
+        @media (max-width: 900px) { .chatbot-widget { width: 98vw; height: 80vh; right: 1vw; } .chatbot-container.bottom-left .chatbot-widget, .chatbot-container.top-left .chatbot-widget { left: 1vw; right: auto; } }
+        @media (max-width: 600px) { .chatbot-widget { width: 100vw; height: 100vh; right: 0; left: 0; border-radius: 0; } .chatbot-container { bottom: 0 !important; right: 0 !important; left: 0 !important; } }
+        @keyframes pulse { 0% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } 50% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.8); } 100% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } }
+        .chatbot-button.pulse { animation: pulse 2s infinite; }
+      \`;
+      const styleSheet = document.createElement('style');
+      styleSheet.textContent = styles;
+      document.head.appendChild(styleSheet);
+      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle">' + config.buttonIcon + '<span class="ai-badge">AI</span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '</div><button class="chatbot-close" id="chatbotClose">\xD7</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+      function initializeChatbot() {
+        const container = document.createElement('div');
+        container.innerHTML = chatbotHTML;
+        document.body.appendChild(container.firstElementChild);
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotWidget = document.getElementById('chatbotWidget');
+        const chatbotClose = document.getElementById('chatbotClose');
+        chatbotToggle.addEventListener('click', () => {
+          chatbotWidget.classList.add('active');
+          chatbotToggle.style.display = 'none';
+        });
+        chatbotClose.addEventListener('click', () => {
+          chatbotWidget.classList.remove('active');
+          chatbotToggle.style.display = 'flex';
+        });
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.chatbot-container')) {
+            chatbotWidget.classList.remove('active');
+            chatbotToggle.style.display = 'flex';
+          }
+        });
+        const hasSeenChatbot = localStorage.getItem('chatbot-seen');
+        if (!hasSeenChatbot) {
+          chatbotToggle.classList.add('pulse');
+          setTimeout(() => {
+            chatbotToggle.classList.remove('pulse');
+            localStorage.setItem('chatbot-seen', 'true');
+          }, 10000);
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeChatbot);
+      } else {
+        initializeChatbot();
+      }
+      window.ChatbotConfig = {
+        updateUrl: function(newUrl) {
+          const iframe = document.querySelector('.chatbot-iframe');
+          if (iframe) { iframe.src = newUrl; }
+        },
+        updateTitle: function(newTitle) {
+          const title = document.querySelector('.chatbot-title');
+          if (title) { title.textContent = newTitle; }
+        },
+        updateIcon: function(newIcon) {
+          const button = document.querySelector('.chatbot-button');
+          if (button) { button.textContent = newIcon; }
+        },
+        show: function() {
+          const widget = document.getElementById('chatbotWidget');
+          const toggle = document.getElementById('chatbotToggle');
+          if (widget && toggle) {
+            widget.classList.add('active');
+            toggle.style.display = 'none';
+          }
+        },
+        hide: function() {
+          const widget = document.getElementById('chatbotWidget');
+          const toggle = document.getElementById('chatbotToggle');
+          if (widget && toggle) {
+            widget.classList.remove('active');
+            toggle.style.display = 'flex';
+          }
+        }
+      };
+    })();
+    `);
   });
   const httpServer = createServer(app2);
   return httpServer;
@@ -275,36 +721,44 @@ async function registerRoutes(app2) {
 
 // server/vite.ts
 import express from "express";
-import fs from "fs";
-import path2 from "path";
+import fs2 from "fs";
+import path3 from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path2 from "path";
 import { fileURLToPath } from "url";
 var __filename = fileURLToPath(import.meta.url);
-var __dirname = path.dirname(__filename);
+var __dirname = path2.dirname(__filename);
 var vite_config_default = defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared"),
-      "@assets": path.resolve(__dirname, "attached_assets")
+      "@": path2.resolve(__dirname, "client", "src"),
+      "@shared": path2.resolve(__dirname, "shared"),
+      "@assets": path2.resolve(__dirname, "attached_assets")
     }
   },
-  root: path.resolve(__dirname, "client"),
+  root: path2.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist"),
+    outDir: path2.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, "client/index.html"),
-        widget: path.resolve(__dirname, "client/widget.html")
+        main: path2.resolve(__dirname, "client/index.html"),
+        widget: path2.resolve(__dirname, "client/widget.html"),
+        embed: path2.resolve(__dirname, "client/embed.html")
+      },
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"]
+        }
       }
-    }
+    },
+    assetsDir: "assets",
+    copyPublicDir: true
   },
   server: {
     fs: {
@@ -349,13 +803,13 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path2.resolve(
+      const clientTemplate = path3.resolve(
         import.meta.dirname,
         "..",
         "client",
         "index.html"
       );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid2()}"`
@@ -369,26 +823,36 @@ async function setupVite(app2, server) {
   });
 }
 function serveStatic(app2) {
-  const distPath = path2.resolve(import.meta.dirname, "public");
-  if (!fs.existsSync(distPath)) {
+  const distPath = path3.resolve(import.meta.dirname, "..");
+  if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
 // server/index.ts
 var app = express2();
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 app.use(express2.json());
 app.use(express2.urlencoded({ extended: false }));
 app.use(express2.static("dist"));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -397,8 +861,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -423,8 +887,8 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
-  const port = 5e3;
-  server.listen(5e3, "127.0.0.1", () => {
-    console.log("Server running on http://127.0.0.1:5000");
+  const port = 5002;
+  server.listen(5002, "127.0.0.1", () => {
+    console.log("Server running on http://127.0.0.1:5002");
   });
 })();

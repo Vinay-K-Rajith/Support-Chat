@@ -1,0 +1,1 @@
+import{e as t,j as e,Q as r,q as o,T as s,d as i,C as n}from"./chat-interface-Dcf8_noK.js";import"./vendor-BtIrUdbE.js";const a=t(document.getElementById("widget-root"));a.render(e.jsx(r,{client:o,children:e.jsxs(s,{children:[e.jsx(i,{}),e.jsx(n,{isOpen:!0,onClose:()=>{}})]})}));
