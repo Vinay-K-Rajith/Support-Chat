@@ -2,11 +2,8 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import path from "path";
 
 const app = express();
-
-const posixPath = path.posix;
 
 // Add CORS middleware for widget embedding
 app.use((req, res, next) => {
@@ -23,8 +20,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// Replace express.static('dist') with cross-platform static serving
-app.use(express.static(posixPath.resolve(__dirname, "..", "dist")));
+app.use(express.static('dist'));
 
 app.use((req, res, next) => {
   const start = Date.now();
