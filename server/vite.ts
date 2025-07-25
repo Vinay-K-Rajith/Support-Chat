@@ -9,6 +9,13 @@ import { nanoid } from "nanoid";
 const viteLogger = createLogger();
 const posixPath = path.posix;
 
+// ✅ Fix: Create cross-platform compatible __dirname
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const normalizedDirname =
+  process.platform === "win32" && __dirname.startsWith("/")
+    ? __dirname.slice(1)
+    : __dirname;
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -47,17 +54,17 @@ export async function setupVite(app: Express, server: Server) {
 
     try {
       const clientTemplate = posixPath.resolve(
-        import.meta.dirname,
+        normalizedDirname,
         "..",
         "client",
-        "index.html",
+        "index.html"
       );
 
-      // always reload the index.html file from disk incase it changes
+      // always reload the index.html file from disk in case it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
@@ -69,11 +76,11 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = posixPath.resolve(import.meta.dirname, ".." );
+  const distPath = posixPath.resolve(normalizedDirname, "..");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
 
