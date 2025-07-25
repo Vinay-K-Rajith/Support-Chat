@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Embed - School Chat Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        .button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #1d4ed8;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏫 School Chat Widget Test</h1>
+        
+        <div class="info">
+            <strong>✅ Server Status:</strong> Running on http://localhost:5000<br>
+            <strong>🎯 Widget Status:</strong> Embedded and ready to use<br>
+            <strong>📍 Location:</strong> Look for the blue chat button in the bottom-right corner
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Controls</h2>
+            <p>Use these buttons to test the widget programmatically:</p>
+            <button class="button" onclick="SchoolChatWidget.open()">Open Chat Widget</button>
+            <button class="button" onclick="SchoolChatWidget.close()">Close Chat Widget</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Test Instructions</h2>
+            <ol>
+                <li>Look for the blue chat button in the bottom-right corner</li>
+                <li>Click the button to open the chat interface</li>
+                <li>Try asking questions about admissions, fees, or school policies</li>
+                <li>Use the quick action buttons for common queries</li>
+                <li>Test the responsive design by resizing your browser</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Embed Code</h2>
+            <p>To embed this widget on any website, add this line:</p>
+            <code style="background: #f0f0f0; padding: 10px; border-radius: 5px; display: block; margin: 10px 0;">
+                &lt;script src="http://localhost:5000/embed.js"&gt;&lt;/script&gt;
+            </code>
+            <p><strong>Note:</strong> For production, replace with your ngrok URL.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>📱 Features to Test</h2>
+            <ul>
+                <li>✅ Chat button appears in bottom-right corner</li>
+                <li>✅ Clicking opens the chat interface</li>
+                <li>✅ Quick action buttons work</li>
+                <li>✅ Responsive design on mobile/desktop</li>
+                <li>✅ No conflicts with page styling</li>
+                <li>✅ JavaScript API works (open/close)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Embed the widget script -->
+    <script src="http://localhost:5002/embed.js"></script>
+</body>
+</html> 

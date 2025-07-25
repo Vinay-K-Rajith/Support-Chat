@@ -1,0 +1,6 @@
+import{c as r,j as e,B as a,C as n,e as i,Q as l,q as c,T as d,d as h}from"./chat-interface-Dcf8_noK.js";import{C as u}from"./index-tJJQ9AHE.js";import{r as x,b as m}from"./vendor-BtIrUdbE.js";/**
+ * @license lucide-react v0.453.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const g=r("MessageCircle",[["path",{d:"M7.9 20A9 9 0 1 0 4 16.1L2 22Z",key:"vv11sd"}]]);function j(){const[t,s]=x.useState(!1);return e.jsxs(e.Fragment,{children:[e.jsx("div",{className:"fixed bottom-6 right-6 z-50",children:e.jsxs(a,{onClick:()=>s(!0),className:"bg-school-blue hover:bg-school-deep text-white w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 animate-bounce-gentle group relative",size:"icon",children:[e.jsx(g,{className:"w-6 h-6 group-hover:scale-110 transition-transform"}),e.jsx("div",{className:"absolute -top-2 -right-2 bg-school-orange text-white text-xs w-6 h-6 rounded-full flex items-center justify-center animate-pulse",children:e.jsx(u,{className:"w-3 h-3"})})]})}),t&&e.jsx(n,{isOpen:t,onClose:()=>s(!1)})]})}const o=document.getElementById("school-chat-widget");o&&i(o).render(e.jsx(m.StrictMode,{children:e.jsx(l,{client:c,children:e.jsxs(d,{children:[e.jsx(h,{}),e.jsx(j,{})]})})}));
