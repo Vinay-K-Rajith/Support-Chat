@@ -1,4 +1,4 @@
-# School Chat Assistant - Embeddable Widget
+#Support Chat
 
 A React-based chat widget for St. Xavier's School that can be embedded in any website. The widget provides information about admissions, fees, documents, and school policies.
 
