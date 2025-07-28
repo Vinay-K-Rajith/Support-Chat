@@ -72,11 +72,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5002
+  // ALWAYS serve the app on port 8000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5002;
-  server.listen(5002, '127.0.0.1', () => {
-    console.log('Server running on http://127.0.0.1:5002');
+  const port = 8000;
+  server.listen(8000, '127.0.0.1', () => {
+    console.log('Server running on http://127.0.0.1:8000');
   });
 })();
