@@ -1,15 +1,11 @@
-import { MongoClient, ObjectId } from "mongodb";
-
-const uri = process.env.MONGODB_URI!;
-const client = new MongoClient(uri);
+import MongoClientService from "./mongo-client";
 
 const DB_NAME = "test";
 const COLLECTION = "support_chat_history";
 
 export async function getAllChatSessions() {
-  await client.connect();
-  const db = client.db(DB_NAME);
-  // Group by sessionId, get latest message timestamp for sorting
+  await MongoClientService.connect();
+  const db = MongoClientService.getDb(DB_NAME);
   const sessions = await db.collection(COLLECTION).aggregate([
     { $group: {
       _id: "$sessionId",
@@ -28,8 +24,8 @@ export async function getAllChatSessions() {
 }
 
 export async function getChatMessagesBySession(sessionId: string) {
-  await client.connect();
-  const db = client.db(DB_NAME);
+  await MongoClientService.connect();
+  const db = MongoClientService.getDb(DB_NAME);
   const messages = await db.collection(COLLECTION)
     .find({ sessionId })
     .sort({ timestamp: 1 })
@@ -38,8 +34,8 @@ export async function getChatMessagesBySession(sessionId: string) {
 }
 
 export async function saveChatMessage({ sessionId, content, isUser, timestamp }: { sessionId: string, content: string, isUser: boolean, timestamp?: Date }) {
-  await client.connect();
-  const db = client.db(DB_NAME);
+  await MongoClientService.connect();
+  const db = MongoClientService.getDb(DB_NAME);
   const doc = {
     sessionId,
     content,
@@ -51,8 +47,8 @@ export async function saveChatMessage({ sessionId, content, isUser, timestamp }:
 }
 
 export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
-  await client.connect();
-  const db = client.db(DB_NAME);
+  await MongoClientService.connect();
+  const db = MongoClientService.getDb(DB_NAME);
   let groupId: any = {};
   if (type === 'daily') {
     groupId = {
@@ -79,7 +75,6 @@ export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
     { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.week": 1 } }
   ];
   const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
-  // Format period string
   return results.map(r => {
     let period = '';
     if (type === 'daily') {
@@ -94,16 +89,14 @@ export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
 }
 
 export async function getHourlyUsageStats(dateStr?: string) {
-  await client.connect();
-  const db = client.db(DB_NAME);
+  await MongoClientService.connect();
+  const db = MongoClientService.getDb(DB_NAME);
   let match: any = {};
   let start: Date, end: Date;
   if (dateStr) {
-    // Parse date and match messages for that day (UTC)
     start = new Date(dateStr + 'T00:00:00.000Z');
     end = new Date(dateStr + 'T23:59:59.999Z');
   } else {
-    // Default to today (UTC)
     const today = new Date();
     const yyyy = today.getUTCFullYear();
     const mm = String(today.getUTCMonth() + 1).padStart(2, '0');
@@ -121,10 +114,8 @@ export async function getHourlyUsageStats(dateStr?: string) {
     { $sort: { "_id.hour": 1 } }
   ];
   const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
-  // Fill missing hours with 0
   const hourMap: Record<number, number> = {};
   results.forEach(r => { hourMap[r._id.hour] = r.count; });
-  // Always return 24 items (0-23)
   const full = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: hourMap[h] || 0 }));
   return full;
-} 
+}

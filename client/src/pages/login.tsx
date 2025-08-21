@@ -170,14 +170,14 @@ const LoginPage: React.FC = () => {
               )}
             </button>
           </form>
-          <div className="mt-8 text-center">
+          {/* <div className="mt-8 text-center">
             <p className="text-gray-600">
               Don't have an account?{' '}
               <a href="#" className="text-blue-600 hover:text-blue-700 transition-colors font-medium">
                 Sign up
               </a>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

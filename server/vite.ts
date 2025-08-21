@@ -7,7 +7,13 @@ import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
-const posixPath = path.posix;
+
+// ✅ Fix: Create cross-platform compatible __dirname
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const normalizedDirname =
+  process.platform === "win32" && __dirname.startsWith("/")
+    ? __dirname.slice(1)
+    : __dirname;
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -24,7 +30,7 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true as true, // Fix: use the literal type 'true' not boolean
+    allowedHosts: true as true,
   };
 
   const vite = await createViteServer({
@@ -46,22 +52,27 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = posixPath.resolve(
-        import.meta.dirname,
+      // ✅ Fix: Use regular path.resolve instead of posixPath.resolve
+      const clientTemplate = path.resolve(
+        normalizedDirname,
         "..",
         "client",
-        "index.html",
+        "index.html"
       );
 
-      // always reload the index.html file from disk incase it changes
+      // Debug: Log the resolved path
+      console.log("Resolved client template path:", clientTemplate);
+
+      // always reload the index.html file from disk in case it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
+      console.error("Error in setupVite middleware:", e);
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
@@ -69,11 +80,14 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = posixPath.resolve(import.meta.dirname, ".." );
+  // ✅ Fix: Use regular path.resolve instead of posixPath.resolve
+  const distPath = path.resolve(normalizedDirname, "..");
+
+  console.log("Resolved dist path:", distPath);
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
 
@@ -81,6 +95,7 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(posixPath.resolve(distPath, "index.html"));
+    // ✅ Fix: Use regular path.resolve instead of posixPath.resolve
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

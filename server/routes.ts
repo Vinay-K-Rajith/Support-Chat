@@ -12,7 +12,7 @@ import path from "path";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import type { Request } from "express";
-import { MongoClient } from "mongodb"; // <-- FIXED: import MongoClient instead of require
+import MongoClientService from "./services/mongo-client";
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -107,20 +107,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/support/ticket-click", async (req, res) => {
     try {
       const { sessionId } = req.body;
-      const uri = process.env.MONGODB_URI;
-      if (!uri) {
-        return res.status(500).json({ error: "MONGODB_URI is not set" });
-      }
-      const client = new MongoClient(uri);
-      await client.connect();
-      const db = client.db("test");
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
       await db.collection("ticket").insertOne({
         timestamp: new Date(),
         sessionId: sessionId || null,
       });
       res.json({ success: true });
     } catch (error) {
-      console.error('Error in /api/support/ticket-click:', error);
+      console.error("Error in /api/support/ticket-click:", error);
       res.status(500).json({ error: "Failed to log ticket click" });
     }
   });
@@ -132,13 +127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!from || !to) {
         return res.status(400).json({ error: "from and to query params required" });
       }
-      const uri = process.env.MONGODB_URI;
-      if (!uri) {
-        return res.status(500).json({ error: "MONGODB_URI is not set" });
-      }
-      const client = new MongoClient(uri);
-      await client.connect();
-      const db = client.db("test");
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
       const match = {
         timestamp: {
           $gte: new Date(String(from)),
@@ -163,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await db.collection("ticket").aggregate(pipeline).toArray();
       res.json({ stats });
     } catch (error) {
-      console.error('Error in /api/support/ticket-stats:', error);
+      console.error("Error in /api/support/ticket-stats:", error);
       res.status(500).json({ error: "Failed to fetch ticket stats" });
     }
   });

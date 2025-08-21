@@ -213,19 +213,46 @@ ENTAB's ERP platform streamlines all school operations, including fee management
   };
 }
 
-// server/services/knowledge-base.ts
+// server/services/mongo-client.ts
 import { MongoClient } from "mongodb";
-var uri = process.env.MONGODB_URI;
-var client = new MongoClient(uri);
+var MongoClientService = class _MongoClientService {
+  static instance;
+  constructor() {
+  }
+  static getInstance() {
+    if (!_MongoClientService.instance) {
+      const uri = process.env.MONGODB_URI;
+      if (!uri) {
+        throw new Error("MONGODB_URI is not set");
+      }
+      _MongoClientService.instance = new MongoClient(uri);
+    }
+    return _MongoClientService.instance;
+  }
+  static async connect() {
+    const client = _MongoClientService.getInstance();
+    if (!client) {
+      throw new Error("MongoClient instance is not initialized");
+    }
+    await client.connect();
+  }
+  static getDb(dbName) {
+    const client = _MongoClientService.getInstance();
+    return client.db(dbName);
+  }
+};
+var mongo_client_default = MongoClientService;
+
+// server/services/knowledge-base.ts
 async function getKnowledgeBase() {
-  await client.connect();
-  const db = client.db("test");
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb("test");
   const kb = await db.collection("Chatbot").findOne({});
   return kb;
 }
 async function updateKnowledgeBase(data) {
-  await client.connect();
-  const db = client.db("test");
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb("test");
   await db.collection("Chatbot").updateOne({}, { $set: data }, { upsert: true });
   return getKnowledgeBase();
 }
@@ -234,7 +261,7 @@ async function updateKnowledgeBase(data) {
 var genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || "AIzaSyCKNgAg31MWI2TEYsON8y_0cXzRZZktQnU"
 );
-var model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
+var model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 async function generateResponse(userMessage, sessionId) {
   try {
     const supportContext = getSupportContext();
@@ -253,7 +280,7 @@ When answering, use the following formatting triggers to help the UI render your
 - Use markdown formatting for clarity (bold for headings, lists, etc.)
 
 If a scenario matches, provide the steps or answer in a clear, friendly, and professional manner using the above structure. If not, politely ask for more details or direct the user to contact support.
-
+if you don't have  info on that particular query ask the user create a new support ticket 
 SUPPORT CONTEXT:
 ${JSON.stringify(supportContext, null, 2)}
 
@@ -277,14 +304,11 @@ Please respond to the user's query in a helpful and informative way. Use the sup
 import { nanoid } from "nanoid";
 
 // server/services/chat-history.ts
-import { MongoClient as MongoClient2 } from "mongodb";
-var uri2 = process.env.MONGODB_URI;
-var client2 = new MongoClient2(uri2);
 var DB_NAME = "test";
 var COLLECTION = "support_chat_history";
 async function getAllChatSessions() {
-  await client2.connect();
-  const db = client2.db(DB_NAME);
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb(DB_NAME);
   const sessions = await db.collection(COLLECTION).aggregate([
     { $group: {
       _id: "$sessionId",
@@ -302,14 +326,14 @@ async function getAllChatSessions() {
   }));
 }
 async function getChatMessagesBySession(sessionId) {
-  await client2.connect();
-  const db = client2.db(DB_NAME);
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb(DB_NAME);
   const messages = await db.collection(COLLECTION).find({ sessionId }).sort({ timestamp: 1 }).toArray();
   return messages;
 }
 async function saveChatMessage({ sessionId, content, isUser, timestamp }) {
-  await client2.connect();
-  const db = client2.db(DB_NAME);
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb(DB_NAME);
   const doc = {
     sessionId,
     content,
@@ -320,8 +344,8 @@ async function saveChatMessage({ sessionId, content, isUser, timestamp }) {
   return doc;
 }
 async function getUsageStats(type) {
-  await client2.connect();
-  const db = client2.db(DB_NAME);
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb(DB_NAME);
   let groupId = {};
   if (type === "daily") {
     groupId = {
@@ -361,8 +385,8 @@ async function getUsageStats(type) {
   });
 }
 async function getHourlyUsageStats(dateStr) {
-  await client2.connect();
-  const db = client2.db(DB_NAME);
+  await mongo_client_default.connect();
+  const db = mongo_client_default.getDb(DB_NAME);
   let match = {};
   let start, end;
   if (dateStr) {
@@ -400,7 +424,6 @@ import fs from "fs";
 import path from "path";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
-import { MongoClient as MongoClient3 } from "mongodb";
 var uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -479,13 +502,8 @@ async function registerRoutes(app2) {
   app2.post("/api/support/ticket-click", async (req, res) => {
     try {
       const { sessionId } = req.body;
-      const uri3 = process.env.MONGODB_URI;
-      if (!uri3) {
-        return res.status(500).json({ error: "MONGODB_URI is not set" });
-      }
-      const client3 = new MongoClient3(uri3);
-      await client3.connect();
-      const db = client3.db("test");
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
       await db.collection("ticket").insertOne({
         timestamp: /* @__PURE__ */ new Date(),
         sessionId: sessionId || null
@@ -502,13 +520,8 @@ async function registerRoutes(app2) {
       if (!from || !to) {
         return res.status(400).json({ error: "from and to query params required" });
       }
-      const uri3 = process.env.MONGODB_URI;
-      if (!uri3) {
-        return res.status(500).json({ error: "MONGODB_URI is not set" });
-      }
-      const client3 = new MongoClient3(uri3);
-      await client3.connect();
-      const db = client3.db("test");
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
       const match = {
         timestamp: {
           $gte: new Date(String(from)),
@@ -772,7 +785,8 @@ var vite_config_default = defineConfig({
 // server/vite.ts
 import { nanoid as nanoid2 } from "nanoid";
 var viteLogger = createLogger();
-var posixPath2 = path3.posix;
+var __dirname2 = path3.dirname(new URL(import.meta.url).pathname);
+var normalizedDirname = process.platform === "win32" && __dirname2.startsWith("/") ? __dirname2.slice(1) : __dirname2;
 function log(message, source = "express") {
   const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -805,12 +819,13 @@ async function setupVite(app2, server) {
   app2.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = posixPath2.resolve(
-        import.meta.dirname,
+      const clientTemplate = path3.resolve(
+        normalizedDirname,
         "..",
         "client",
         "index.html"
       );
+      console.log("Resolved client template path:", clientTemplate);
       let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
@@ -819,13 +834,15 @@ async function setupVite(app2, server) {
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
+      console.error("Error in setupVite middleware:", e);
       vite.ssrFixStacktrace(e);
       next(e);
     }
   });
 }
 function serveStatic(app2) {
-  const distPath = posixPath2.resolve(import.meta.dirname, "..");
+  const distPath = path3.resolve(normalizedDirname, "..");
+  console.log("Resolved dist path:", distPath);
   if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -833,7 +850,7 @@ function serveStatic(app2) {
   }
   app2.use(express.static(distPath));
   app2.use("*", (_req, res) => {
-    res.sendFile(posixPath2.resolve(distPath, "index.html"));
+    res.sendFile(path3.resolve(distPath, "index.html"));
   });
 }
 
