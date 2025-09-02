@@ -784,6 +784,8 @@ function ChatHistory() {
   const [viewSession, setViewSession] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const theme = useTheme();
 
   useEffect(() => {
@@ -832,6 +834,21 @@ function ChatHistory() {
     if (sort === 'Oldest') return new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime();
     return 0;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentSessions = filteredSessions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [from, to, minMessages, sort]);
 
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 2 }}>
@@ -888,9 +905,9 @@ function ChatHistory() {
             <TableBody>
               {loadingSessions ? (
                 <TableRow><TableCell colSpan={5} align="center"><CircularProgress size={20} /></TableCell></TableRow>
-              ) : filteredSessions.length === 0 ? (
+              ) : currentSessions.length === 0 ? (
                 <TableRow><TableCell colSpan={5} align="center">No chat sessions found.</TableCell></TableRow>
-              ) : filteredSessions.map((s, idx) => (
+              ) : currentSessions.map((s, idx) => (
                 <TableRow key={s.sessionId}>
                   <TableCell>{s.sessionId}</TableCell>
                   <TableCell>{s.ip || '127.0.0.1'}</TableCell>
@@ -904,6 +921,69 @@ function ChatHistory() {
             </TableBody>
           </Table>
         </TableContainer>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3, px: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredSessions.length)} of {filteredSessions.length} sessions
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              
+              {/* Page Numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Show first page, last page, current page, and pages around current page
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "contained" : "outlined"}
+                      size="small"
+                      onClick={() => handlePageChange(page)}
+                      sx={{
+                        minWidth: 40,
+                        ...(currentPage === page && {
+                          bgcolor: 'primary.main',
+                          color: 'white',
+                          '&:hover': { bgcolor: 'primary.dark' }
+                        })
+                      }}
+                    >
+                      {page}
+                    </Button>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <Typography key={page} sx={{ px: 1, alignSelf: 'center' }}>...</Typography>;
+                }
+                return null;
+              })}
+              
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </Box>
+          </Box>
+        )}
       </Paper>
       {/* Chat Messages Dialog */}
       <Dialog open={!!viewSession} onClose={() => setViewSession(null)} maxWidth="md" fullWidth>

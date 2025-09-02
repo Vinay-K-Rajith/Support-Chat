@@ -236,23 +236,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (window.chatbotInjected) return;
       window.chatbotInjected = true;
       const config = {
-        chatbotUrl: 'http://127.0.0.1:5002/',
+        chatbotUrl: 'https://supportchat.entab.net/',
         chatbotTitle: 'Support',
-        buttonIcon: '💬',
         position: 'bottom-right'
       };
       const styles = \`
-        .chatbot-container { position: fixed; bottom: 32px; right: 32px; z-index: 999999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .chatbot-button { width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; position: relative; }
-        .chatbot-container { position: fixed; bottom: 32px; right: 32px; z-index: 999999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .chatbot-button { width: 70px; height: 70px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; }
-        .chatbot-button .ai-badge { position: absolute; bottom: 8px; right: 8px; background: white; border: 1px solid #ccc; border-radius: 8px; color: #333; font-size: 12px; font-weight: bold; padding: 2px 7px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); letter-spacing: 0.5px; }
+        .chatbot-container { position: fixed; bottom: 0px; right: 32px; z-index: 999999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .chatbot-button { 
+          width: 62px; 
+          height: 62px; 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+          border: 4px solid #fff; 
+          border-radius: 50%; 
+          cursor: pointer; 
+          box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); 
+          transition: all 0.3s ease; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          color: white; 
+          font-size: 30px; 
+          position: relative; 
+          padding: 0;
+          top: -35px;   /* Move the whole button up by 35px */
+          right: -18px; /* Move the whole button right by 18px */
+        }
+        .chatbot-button .chatbot-icon-img-wrapper {
+          width: 46px;
+          height: 46px;
+          background: #fff;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.10);
+          position: relative;
+          top: 0;
+          left: 0;
+        }
+        .chatbot-button .chatbot-icon-img {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+          border-radius: 50%;
+          display: block;
+        }
         .chatbot-button:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6); }
-        .chatbot-widget { position: absolute; bottom: 0px; right: 0; width: 480px; height: 720px; background: white; border-radius: 24px; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22); display: none; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease; }
+        .chatbot-widget { 
+          position: absolute; 
+          bottom: 0px; 
+          right: 0; 
+          width: 480px; 
+          height: 93vh; /* Changed from 720px to 90vh for 90% of viewport height */
+          max-height: 90vh; /* Ensure it never exceeds 90% of viewport */
+          background: white; 
+          border-radius: 24px; 
+          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22); 
+          display: none; 
+          flex-direction: column; 
+          overflow: hidden; 
+          animation: slideUp 0.3s ease; 
+        }
         .chatbot-widget.active { display: flex; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         .chatbot-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: relative; }
         .chatbot-title { font-weight: bold; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .chatbot-title .chatbot-ai-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          color: #19205B;
+          font-weight: bold;
+          font-size: 1.15rem;
+          border-radius: 0.7em;
+          padding: 0 0.55em;
+          height: 1.7em;
+          margin-left: 0.6em;
+          box-shadow: 0 1px 4px rgba(102, 126, 234, 0.10);
+          border: none;
+          letter-spacing: 0.01em;
+        }
         .chatbot-header .chatbot-logo { width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15); }
         .chatbot-header .chatbot-logo img { width: 28px; height: 28px; }
         .chatbot-close { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.3s ease; }
@@ -265,16 +329,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .chatbot-container.top-right .chatbot-widget { top: 90px; bottom: auto; }
         .chatbot-container.top-left { top: 32px; bottom: auto; left: 32px; right: auto; }
         .chatbot-container.top-left .chatbot-widget { top: 90px; bottom: auto; right: auto; left: 0; }
-        @media (max-width: 900px) { .chatbot-widget { width: 98vw; height: 80vh; right: 1vw; } .chatbot-container.bottom-left .chatbot-widget, .chatbot-container.top-left .chatbot-widget { left: 1vw; right: auto; } }
-        @media (max-width: 600px) { .chatbot-widget { width: 100vw; height: 100vh; right: 0; left: 0; border-radius: 0; } .chatbot-container { bottom: 0 !important; right: 0 !important; left: 0 !important; } }
+        @media (max-width: 900px) { 
+          .chatbot-widget { width: 98vw; height: 80vh; max-height: 80vh; right: 1vw; } 
+          .chatbot-container.bottom-left .chatbot-widget, .chatbot-container.top-left .chatbot-widget { left: 1vw; right: auto; } 
+        }
+        @media (max-width: 600px) { 
+          .chatbot-widget { width: 100vw; height: 90vh; max-height: 90vh; right: 0; left: 0; border-radius: 0; } 
+          .chatbot-container { bottom: 0 !important; right: 0 !important; left: 0 !important; } 
+        }
         @keyframes pulse { 0% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } 50% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.8); } 100% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } }
         .chatbot-button.pulse { animation: pulse 2s infinite; }
       \`;
       const styleSheet = document.createElement('style');
       styleSheet.textContent = styles;
       document.head.appendChild(styleSheet);
-      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle">' + config.buttonIcon + '<span class="ai-badge">AI</span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '</div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+      const chatbotIconUrl = 'https://static.vecteezy.com/system/resources/previews/015/911/602/non_2x/customer-support-icon-outline-style-vector.jpg';
+      // Add the AI badge beside the Support title in the header, matching the provided image
+      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span></div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
       function initializeChatbot() {
+        // Check localStorage for 'Value'
+        const value = localStorage.getItem('Value');
+        if (value !== 'LVISG') {
+          console.log('Value is not LVISG, so not showing the chatbot button');
+          return;
+        }
         const container = document.createElement('div');
         container.innerHTML = chatbotHTML;
         document.body.appendChild(container.firstElementChild);
@@ -316,11 +394,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         updateTitle: function(newTitle) {
           const title = document.querySelector('.chatbot-title');
-          if (title) { title.textContent = newTitle; }
+          if (title) { title.childNodes[0].textContent = newTitle; }
         },
-        updateIcon: function(newIcon) {
-          const button = document.querySelector('.chatbot-button');
-          if (button) { button.textContent = newIcon; }
+        updateIcon: function(newIconUrl) {
+          const img = document.querySelector('.chatbot-button .chatbot-icon-img');
+          if (img) { img.src = newIconUrl; }
         },
         show: function() {
           const widget = document.getElementById('chatbotWidget');

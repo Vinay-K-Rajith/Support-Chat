@@ -173,7 +173,7 @@ function renderStep(step: string, idx: number) {
         {idx + 1}
       </div>
       <div
-        className="flex-1 text-[15px] leading-relaxed whitespace-pre-line"
+        className="flex-1 text-[14px] leading-relaxed whitespace-pre-line"
         dangerouslySetInnerHTML={{ __html: stepText }}
       />
     </div>
@@ -185,7 +185,7 @@ function renderNote(note: string, idx: number) {
   return (
     <div key={idx} className={`flex items-start p-3 rounded-xl mb-2 shadow-sm ${isWarning ? "bg-orange-50 border-l-4 border-orange-400" : "bg-yellow-50 border-l-4 border-yellow-400"}`}>
       <div className="mr-2 mt-0.5">{isWarning ? <AlertTriangle className="w-5 h-5 text-orange-400" /> : <Info className="w-5 h-5 text-yellow-400" />}</div>
-      <div className="text-[15px] text-gray-800">
+      <div className="text-[14px] text-gray-800">
         <span className="font-semibold mr-1">{isWarning ? "Important Warning" : "Important Note"}</span>
         {linkify(note.replace(/^(Note:|Warning:)/i, "").trim())}
       </div>
@@ -197,7 +197,7 @@ function renderQuickAnswer(answer: string) {
   return (
     <div className="flex items-start bg-green-50 border border-green-200 rounded-xl p-3 mb-3 shadow-sm">
       <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
-      <div className="text-[15px] text-green-900">
+      <div className="text-[14px] text-green-900">
         <span className="font-semibold">Quick Answer</span>
         <div>{linkify(answer)}</div>
       </div>
@@ -305,13 +305,13 @@ export function MessageBubble({ content, isUser, timestamp, isFirstBotMessage = 
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
       <div className={`rounded-2xl p-4 max-w-[85%] ${isUser ? 'bg-blue-50 text-blue-900 border border-blue-200 rounded-tr-sm' : 'bg-gray-50 rounded-tl-sm border border-gray-200'}`}>
-        <div className={`text-sm leading-relaxed ${isUser ? 'text-blue-900' : 'text-gray-800'}`}>
+        <div className={`text-xs leading-relaxed ${isUser ? 'text-blue-900' : 'text-gray-800'}`}>
           {formattedContent}
         </div>
         {/* Show ticket prompt and button only for non-user, non-first bot messages */}
         {!isUser && !isFirstBotMessage && (
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-[15px] text-gray-700">Is your issue resolved? If not, generate a ticket</span>
+            <span className="text-[14px] text-gray-700">Is your issue resolved? If not, generate a ticket</span>
             <button
               className="inline-block px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-sm shadow hover:bg-blue-700 transition-colors ml-2"
               onClick={async () => {

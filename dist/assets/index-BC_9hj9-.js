@@ -1,4 +1,4 @@
-import{c as e}from"./chat-interface-Dcf8_noK.js";/**
+import{c as e}from"./chat-interface-DuUz4ktD.js";/**
  * @license lucide-react v0.453.0 - ISC
  *
  * This source code is licensed under the ISC license.
