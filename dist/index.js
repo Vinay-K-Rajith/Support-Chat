@@ -730,15 +730,12 @@ async function registerRoutes(app2) {
       styleSheet.textContent = styles;
       document.head.appendChild(styleSheet);
       const chatbotIconUrl = 'https://static.vecteezy.com/system/resources/previews/015/911/602/non_2x/customer-support-icon-outline-style-vector.jpg';
-      // Add the AI badge beside the Support title in the header, matching the provided image
-      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span></div><button class="chatbot-close" id="chatbotClose">\xD7</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+      // Add the AI badge beside the Support title in the header, and simply display "BETA" next to it
+      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">\xD7</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
       function initializeChatbot() {
         // Check localStorage for 'Value'
         const value = localStorage.getItem('Value');
-        if (value !== 'LVISG') {
-          console.log('Value is not LVISG, so not showing the chatbot button');
-          return;
-        }
+        
         const container = document.createElement('div');
         container.innerHTML = chatbotHTML;
         document.body.appendChild(container.firstElementChild);
@@ -984,8 +981,8 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
-  const port = 5002;
-  server.listen(5002, "127.0.0.1", () => {
-    console.log("Server running on http://127.0.0.1:5002");
+  const port = 5003;
+  server.listen(5003, "127.0.0.1", () => {
+    console.log("Server running on http://127.0.0.1:5003");
   });
 })();

@@ -344,15 +344,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       styleSheet.textContent = styles;
       document.head.appendChild(styleSheet);
       const chatbotIconUrl = 'https://static.vecteezy.com/system/resources/previews/015/911/602/non_2x/customer-support-icon-outline-style-vector.jpg';
-      // Add the AI badge beside the Support title in the header, matching the provided image
-      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span></div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+      // Add the AI badge beside the Support title in the header, and simply display "BETA" next to it
+      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
       function initializeChatbot() {
         // Check localStorage for 'Value'
         const value = localStorage.getItem('Value');
-        if (value !== 'LVISG') {
-          console.log('Value is not LVISG, so not showing the chatbot button');
+        // List of allowed codes
+        const allowedCodes = [
+          'LVISG','SGCSBJK','SMCSRKJ','SJCHSN','MLZSBSP','HPSJC','CEVMWM','BCRSTK','HTCDJK','HFCKJK','GWISDOB','VJSKKR','SVPSKC','THARCH','NDSISJ','FACSPG','CTSBKA','SHCSVC','AISMBD','BLOSSOM','BISPVDL','STHLUP','SPHSLJ','VWSSUP','VWSBBK','STSDLJH','SSVVSAP','JRSBKL','SVSNMH','CHRIST','SSIKK','BISHOPS','GEDEETN','STPAULKG','SJCQPB','SMCTHR','MMPSJC','LFCUJK','CJSNAM','GBGSWB','BDSISM','SDPSPD','TJISCG','SPCHSG','SJHSKC','AWSMURD','SMESSG','SXSGAN','CSAGUJ','SMSGRG','SSGVSG','SMSMGJ','SMSVGJ','SFSJPG','SMSBRG','DWPSUP','SJSKGP','GHSKC','DVMROD','SPHSBC','LRVIAN','SAPSJC','LJKNGP','CDSKGP','ILAHSR','DIVINE','SJSKKL','MAISKMK','DPSABH','GISNUP','GISFUP','CTKHSUP','MSICUP','SJSBRL','GICBUP','SMCPUP','DVVICK','LFSMGK','SPCDUP','LFVNKR','TOLINS','JPSV','KJSBLR','CMPSAK','DPSSAC','SRVMSC','EESMWB','EISDRJ','CSVGUJ','SOPHIA','CSRGUJ','LFSGKP','OXFDGW','JKGISV','FCHSBJ','SADDN','NEMSMP','MMCHSC','SACSVP','GNPSRK','GCMCSN','HCCSRS','SHCHSB','SOSGAD','BLSWSG','HITECH','SSHEDU','GDGPSA','SXHSRH','AISDEL','SPAKKM','SATLUJ','RASSAZ','VYASWS','DAVNIT','BPSTGR','GPSSBL','STCSBR','BPSPVG','RBAKHA','RTSJWR','IPSFBD','SPTRS','GDGPSP','DPRESI','VISPRV','DPSMAK','GDGPSC','LAHRSC','KNTLPR','KNTLSR','SMSKNK','CTKCSB','CISERP','TCSERP','STJOAN','AHSBYS','AHSGRL','STSUDP','AEASNM','LAXPSK','SHPSKM','JKGISG','NNHSDC','STCLRT','DARSAN','VIDYAB','ISRJR','GHSSMP','MNSJKP','NDAMBR','SMCHSS','NHSJAT','PCHSJK','PCSJAT','VVCHSA','SMERC','PUSHPA','CJSARKS','HCSKAPA','ARYANVNS','CJSARK','CHRISTKR','STTHOMAS','VVVMMP','VKVRDV','VKVHRJ','MMSJKP','DSKEND','SCWPUC','TAACBH','CPSRJK','SPSBUP','SPAMUP','SPAGKP','TVMHSN','GDGSSV','AJPSKRP','LFSBUP','KPSUTN','KMHSUTN','KMHSS','KPSSS','SFSAJK','TAPSPH','SJCGHS','SJPSBR','SPSMTDY','LFCSDLPB','DBESBP','AUXBANDEL','HFSINDORE','CSTIANS','MCSHJH','SICCUP','NHESBJ','MSGNRD','VJSGJH','MHCMBR','BMSSSK','JMPSWB','DWPSBT','ABSBBK','SHCSRT','SXCKTH','JKPSKJ','SPHSKB','BPSMVD','MAPNGP','SJBSJL','CRMLSD','SHCSMW','STCFDB','SJSHDI','MSCDIB','CSKBOK','LFSGDP','TGFSKU','CJMWAV','DFSTNA','SHCSML','MONAGT','BDAVTJ'
+        ];
+        if (!allowedCodes.includes(value)) {
+          console.log('Value is not in allowed codes, so not showing the chatbot button');
           return;
         }
+        
         const container = document.createElement('div');
         container.innerHTML = chatbotHTML;
         document.body.appendChild(container.firstElementChild);
