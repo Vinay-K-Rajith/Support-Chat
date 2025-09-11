@@ -27,7 +27,7 @@ When answering, use the following formatting triggers to help the UI render your
 - Use markdown formatting for clarity (bold for headings, lists, etc.)
 
 If a scenario matches, provide the steps or answer in a clear, friendly, and professional manner using the above structure. If not, politely ask for more details or direct the user to contact support.
-if you don't have  info on that particular query(or module) ask the user create a new support ticket or send a mail to support@entab.in 
+if you don't have  info on that particular query(or module) ask the user create a new support ticket or send a mail to support@entab.org 
 SUPPORT CONTEXT:\n${JSON.stringify(supportContext, null, 2)}\n\nDOCUMENTS:\n${documentText}\n\nPlease respond to the user's query in a helpful and informative way. Use the support context and documents to provide accurate information in detail.`;
 
     const result = await model.generateContent([
