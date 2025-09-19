@@ -11,13 +11,32 @@ interface ChatResponse {
 
 export function useChat() {
   const [sessionId, setSessionId] = useState<string>("");
+  const [schoolCode, setSchoolCode] = useState<string | null>(null); // Use null to indicate not loaded yet
   const queryClient = useQueryClient();
 
-  // Create session on mount
+  // Extract school code from URL on mount
   useEffect(() => {
+    console.log('🌍 FRONTEND - Full URL:', window.location.href);
+    const urlParams = new URLSearchParams(window.location.search);
+    const schoolCodeParam = urlParams.get('schoolCode'); // Use 'schoolCode' to match existing URL format
+    console.log('🗺️ FRONTEND - URL params:', window.location.search);
+    console.log('🏫 FRONTEND - Extracted school code:', schoolCodeParam);
+    console.log('🗺️ FRONTEND - All URL params:', Object.fromEntries(urlParams));
+    // Always set schoolCode, even if null (indicates we've checked)
+    setSchoolCode(schoolCodeParam || "");
+  }, []);
+
+  // Create session only after school code has been determined
+  useEffect(() => {
+    // Don't create session until we've extracted school code (null -> string)
+    if (schoolCode === null) return;
+    
     const initSession = async () => {
       try {
-        const response = await apiRequest("POST", "/api/chat/session");
+        console.log('🚀 Creating session with schoolCode:', schoolCode);
+        const response = await apiRequest("POST", "/api/chat/session", {
+          schoolCode: schoolCode || null
+        });
         const data = await response.json();
         setSessionId(data.sessionId);
       } catch (error) {
@@ -28,7 +47,7 @@ export function useChat() {
     };
 
     initSession();
-  }, []);
+  }, [schoolCode]);
 
   // Get chat history
   const { data: historyData } = useQuery({
@@ -45,9 +64,11 @@ export function useChat() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
+      console.log('📝 Sending message with schoolCode:', schoolCode);
       const response = await apiRequest("POST", "/api/chat/message", {
         sessionId,
         content,
+        schoolCode: schoolCode || null,
       });
       return response.json() as Promise<ChatResponse>;
     },
@@ -74,6 +95,7 @@ export function useChat() {
 
   return {
     sessionId,
+    schoolCode,
     messages,
     sendMessage,
     isLoading: sendMessageMutation.isPending,

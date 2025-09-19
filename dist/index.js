@@ -37,6 +37,7 @@ var MemStorage = class {
     const session = {
       id: Date.now(),
       sessionId: insertSession.sessionId,
+      schoolCode: insertSession.schoolCode || null,
       createdAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     };
@@ -280,7 +281,7 @@ When answering, use the following formatting triggers to help the UI render your
 - Use markdown formatting for clarity (bold for headings, lists, etc.)
 
 If a scenario matches, provide the steps or answer in a clear, friendly, and professional manner using the above structure. If not, politely ask for more details or direct the user to contact support.
-if you don't have  info on that particular query(or module) ask the user create a new support ticket or send a mail to support@entab.in 
+if you don't have  info on that particular query(or module) ask the user create a new support ticket or send a mail to support@entab.org 
 SUPPORT CONTEXT:
 ${JSON.stringify(supportContext, null, 2)}
 
@@ -306,23 +307,30 @@ import { nanoid } from "nanoid";
 // server/services/chat-history.ts
 var DB_NAME = "test";
 var COLLECTION = "support_chat_history";
-async function getAllChatSessions() {
+async function getAllChatSessions(schoolCode) {
   await mongo_client_default.connect();
   const db = mongo_client_default.getDb(DB_NAME);
-  const sessions = await db.collection(COLLECTION).aggregate([
+  const pipeline = [];
+  if (schoolCode) {
+    pipeline.push({ $match: { schoolCode } });
+  }
+  pipeline.push(
     { $group: {
       _id: "$sessionId",
       lastMessageAt: { $max: "$timestamp" },
       count: { $sum: 1 },
-      firstMessage: { $first: "$content" }
+      firstMessage: { $first: "$content" },
+      schoolCode: { $first: "$schoolCode" }
     } },
     { $sort: { lastMessageAt: -1 } }
-  ]).toArray();
+  );
+  const sessions = await db.collection(COLLECTION).aggregate(pipeline).toArray();
   return sessions.map((s) => ({
     sessionId: s._id,
     lastMessageAt: s.lastMessageAt,
     messageCount: s.count,
-    firstMessage: s.firstMessage
+    firstMessage: s.firstMessage,
+    schoolCode: s.schoolCode
   }));
 }
 async function getChatMessagesBySession(sessionId) {
@@ -331,19 +339,22 @@ async function getChatMessagesBySession(sessionId) {
   const messages = await db.collection(COLLECTION).find({ sessionId }).sort({ timestamp: 1 }).toArray();
   return messages;
 }
-async function saveChatMessage({ sessionId, content, isUser, timestamp }) {
+async function saveChatMessage({ sessionId, content, isUser, timestamp, schoolCode }) {
   await mongo_client_default.connect();
   const db = mongo_client_default.getDb(DB_NAME);
   const doc = {
     sessionId,
     content,
     isUser,
-    timestamp: timestamp || /* @__PURE__ */ new Date()
+    timestamp: timestamp || /* @__PURE__ */ new Date(),
+    schoolCode: schoolCode || null
   };
+  console.log("\u{1F4BE} Saving message to DB:", { sessionId, isUser, schoolCode, contentLength: content.length });
   await db.collection(COLLECTION).insertOne(doc);
+  console.log("\u2705 Message saved successfully");
   return doc;
 }
-async function getUsageStats(type) {
+async function getUsageStats(type, schoolCode) {
   await mongo_client_default.connect();
   const db = mongo_client_default.getDb(DB_NAME);
   let groupId = {};
@@ -364,13 +375,17 @@ async function getUsageStats(type) {
       month: { $month: "$timestamp" }
     };
   }
-  const pipeline = [
+  const pipeline = [];
+  if (schoolCode) {
+    pipeline.push({ $match: { schoolCode } });
+  }
+  pipeline.push(
     { $group: {
       _id: groupId,
       count: { $sum: 1 }
     } },
     { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.week": 1 } }
-  ];
+  );
   const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
   return results.map((r) => {
     let period = "";
@@ -384,7 +399,7 @@ async function getUsageStats(type) {
     return { period, count: r.count };
   });
 }
-async function getHourlyUsageStats(dateStr) {
+async function getHourlyUsageStats(dateStr, schoolCode) {
   await mongo_client_default.connect();
   const db = mongo_client_default.getDb(DB_NAME);
   let match = {};
@@ -401,6 +416,9 @@ async function getHourlyUsageStats(dateStr) {
     end = /* @__PURE__ */ new Date(`${yyyy}-${mm}-${dd}T23:59:59.999Z`);
   }
   match = { timestamp: { $gte: start, $lte: end } };
+  if (schoolCode) {
+    match.schoolCode = schoolCode;
+  }
   const pipeline = [
     { $match: match },
     { $group: {
@@ -432,8 +450,12 @@ var upload = multer({ dest: uploadsDir });
 async function registerRoutes(app2) {
   app2.post("/api/chat/session", async (req, res) => {
     try {
+      const { schoolCode } = req.body;
+      console.log("\u{1F3E6} Creating session with schoolCode:", schoolCode);
+      console.log("\u{1F50D} DEBUG - Full session request body:", JSON.stringify(req.body));
+      console.log("\u{1F50D} DEBUG - session schoolCode type:", typeof schoolCode, "value:", schoolCode);
       const sessionId = nanoid();
-      const session = await storage.createChatSession({ sessionId });
+      const session = await storage.createChatSession({ sessionId, schoolCode });
       res.json({ sessionId: session.sessionId });
     } catch (error) {
       console.error("Error creating chat session:", error);
@@ -442,7 +464,8 @@ async function registerRoutes(app2) {
   });
   app2.get("/api/chat/sessions", async (req, res) => {
     try {
-      const sessions = await getAllChatSessions();
+      const schoolCode = req.query.schoolCode;
+      const sessions = await getAllChatSessions(schoolCode);
       res.json({ sessions });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch chat sessions" });
@@ -459,7 +482,10 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/chat/message", async (req, res) => {
     try {
-      const { sessionId, content } = req.body;
+      const { sessionId, content, schoolCode } = req.body;
+      console.log("\u{1F4AC} Message with schoolCode:", schoolCode, "for session:", sessionId);
+      console.log("\u{1F50D} DEBUG - Full request body:", JSON.stringify(req.body));
+      console.log("\u{1F50D} DEBUG - schoolCode type:", typeof schoolCode, "value:", schoolCode);
       if (!sessionId || !content) {
         return res.status(400).json({ error: "Session ID and content are required" });
       }
@@ -467,14 +493,16 @@ async function registerRoutes(app2) {
         sessionId,
         content,
         isUser: true,
-        timestamp: /* @__PURE__ */ new Date()
+        timestamp: /* @__PURE__ */ new Date(),
+        schoolCode
       });
       const aiResponse = await generateResponse(content, sessionId);
       const aiMessage = await saveChatMessage({
         sessionId,
         content: aiResponse,
         isUser: false,
-        timestamp: /* @__PURE__ */ new Date()
+        timestamp: /* @__PURE__ */ new Date(),
+        schoolCode
       });
       res.json({ userMessage, aiMessage });
     } catch (error) {
@@ -484,7 +512,8 @@ async function registerRoutes(app2) {
   app2.get("/api/chat/usage", async (req, res) => {
     try {
       const type = req.query.type || "daily";
-      const usage = await getUsageStats(type);
+      const schoolCode = req.query.schoolCode;
+      const usage = await getUsageStats(type, schoolCode);
       res.json({ usage });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch usage stats" });
@@ -493,20 +522,194 @@ async function registerRoutes(app2) {
   app2.get("/api/chat/usage/hourly", async (req, res) => {
     try {
       const date = req.query.date;
-      const usage = await getHourlyUsageStats(date);
+      const schoolCode = req.query.schoolCode;
+      const usage = await getHourlyUsageStats(date, schoolCode);
       res.json({ usage });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch hourly usage stats" });
     }
   });
+  app2.get("/api/debug/messages", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const messages = await db.collection("support_chat_history").find({}).sort({ timestamp: -1 }).limit(10).toArray();
+      res.json({ messages });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch debug messages" });
+    }
+  });
+  app2.get("/api/chat/schools", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const schools = await db.collection("support_chat_history").distinct("schoolCode");
+      const validSchools = schools.filter((school) => school && school !== null).sort();
+      res.json({ schools: validSchools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch school codes" });
+    }
+  });
+  app2.get("/api/chat/schools/stats", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const pipeline = [
+        { $match: { schoolCode: { $nin: [null, ""] } } },
+        { $group: {
+          _id: "$schoolCode",
+          messageCount: { $sum: 1 },
+          sessionCount: { $addToSet: "$sessionId" },
+          lastActivity: { $max: "$timestamp" },
+          firstActivity: { $min: "$timestamp" }
+        } },
+        { $addFields: {
+          sessionCount: { $size: "$sessionCount" }
+        } },
+        { $sort: { messageCount: -1 } }
+      ];
+      const stats = await db.collection("support_chat_history").aggregate(pipeline).toArray();
+      const formattedStats = stats.map((stat) => ({
+        schoolCode: stat._id,
+        messageCount: stat.messageCount,
+        sessionCount: stat.sessionCount,
+        lastActivity: stat.lastActivity,
+        firstActivity: stat.firstActivity
+      }));
+      res.json({ stats: formattedStats });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch school stats" });
+    }
+  });
+  app2.get("/api/schools", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const schools = await db.collection("support_schools").find({}).toArray();
+      res.json({ schools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch schools" });
+    }
+  });
+  app2.get("/api/schools/analytics", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const allSchools = await db.collection("support_schools").find({}).toArray();
+      const totalSchools = allSchools.length;
+      const activeSchoolCodes = await db.collection("support_chat_history").distinct("schoolCode", { schoolCode: { $nin: [null, ""] } });
+      const activeSchools = activeSchoolCodes.length;
+      const inactiveSchools = totalSchools - activeSchools;
+      const adoptionRate = totalSchools > 0 ? Math.round(activeSchools / totalSchools * 100) : 0;
+      const usageStats = await db.collection("support_chat_history").aggregate([
+        { $match: { schoolCode: { $nin: [null, ""] } } },
+        { $group: {
+          _id: "$schoolCode",
+          messageCount: { $sum: 1 },
+          sessionCount: { $addToSet: "$sessionId" },
+          lastActivity: { $max: "$timestamp" },
+          firstActivity: { $min: "$timestamp" }
+        } },
+        { $addFields: {
+          sessionCount: { $size: "$sessionCount" }
+        } },
+        { $lookup: {
+          from: "support_schools",
+          localField: "_id",
+          foreignField: "schoolcode",
+          as: "schoolInfo"
+        } },
+        { $sort: { lastActivity: -1 } }
+      ]).toArray();
+      const sixMonthsAgo = /* @__PURE__ */ new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const adoptionTrend = await db.collection("support_chat_history").aggregate([
+        { $match: {
+          schoolCode: { $nin: [null, ""] },
+          timestamp: { $gte: sixMonthsAgo }
+        } },
+        { $group: {
+          _id: {
+            year: { $year: "$timestamp" },
+            month: { $month: "$timestamp" },
+            schoolCode: "$schoolCode"
+          }
+        } },
+        { $group: {
+          _id: {
+            year: "$_id.year",
+            month: "$_id.month"
+          },
+          activeSchools: { $sum: 1 }
+        } },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+      ]).toArray();
+      res.json({
+        totalSchools,
+        activeSchools,
+        inactiveSchools,
+        adoptionRate,
+        usageStats,
+        adoptionTrend
+      });
+    } catch (error) {
+      console.error("School analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch school analytics" });
+    }
+  });
+  app2.get("/api/schools/active", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const recentActive = await db.collection("support_chat_history").aggregate([
+        { $match: {
+          schoolCode: { $nin: [null, ""] },
+          timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1e3) }
+          // Last 7 days
+        } },
+        { $group: {
+          _id: "$schoolCode",
+          lastActivity: { $max: "$timestamp" },
+          messageCount: { $sum: 1 }
+        } },
+        { $lookup: {
+          from: "support_schools",
+          localField: "_id",
+          foreignField: "schoolcode",
+          as: "schoolInfo"
+        } },
+        { $sort: { lastActivity: -1 } }
+      ]).toArray();
+      res.json({ schools: recentActive });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch active schools" });
+    }
+  });
+  app2.get("/api/schools/inactive", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const allSchools = await db.collection("support_schools").find({}).toArray();
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1e3);
+      const activeSchoolCodes = await db.collection("support_chat_history").distinct("schoolCode", {
+        schoolCode: { $nin: [null, ""] },
+        timestamp: { $gte: thirtyDaysAgo }
+      });
+      const inactiveSchools = allSchools.filter((school) => !activeSchoolCodes.includes(school.schoolcode));
+      res.json({ schools: inactiveSchools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch inactive schools" });
+    }
+  });
   app2.post("/api/support/ticket-click", async (req, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, schoolCode } = req.body;
       await mongo_client_default.connect();
       const db = mongo_client_default.getDb("test");
       await db.collection("ticket").insertOne({
         timestamp: /* @__PURE__ */ new Date(),
-        sessionId: sessionId || null
+        sessionId: sessionId || null,
+        schoolCode: schoolCode || null
       });
       res.json({ success: true });
     } catch (error) {
@@ -622,7 +825,7 @@ async function registerRoutes(app2) {
       if (window.chatbotInjected) return;
       window.chatbotInjected = true;
       const config = {
-        chatbotUrl: 'https://supportchat.entab.net/',
+        chatbotUrl: 'http://127.0.0.1:5003/',
         chatbotTitle: 'Support',
         position: 'bottom-right'
       };
@@ -731,10 +934,23 @@ async function registerRoutes(app2) {
       document.head.appendChild(styleSheet);
       const chatbotIconUrl = 'https://static.vecteezy.com/system/resources/previews/015/911/602/non_2x/customer-support-icon-outline-style-vector.jpg';
       // Add the AI badge beside the Support title in the header, and simply display "BETA" next to it
-      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">\xD7</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+          // Construct chatbot URL with school code parameter
+          const schoolCode = localStorage.getItem('Value') || '';
+          const chatbotUrlWithParams = config.chatbotUrl + (config.chatbotUrl.includes('?') ? '&' : '?') + 'schoolCode=' + encodeURIComponent(schoolCode);
+          console.log('\u{1F3EB} INJECT.JS - School code from localStorage:', schoolCode);
+          console.log('\u{1F517} INJECT.JS - Chatbot URL with params:', chatbotUrlWithParams);
+          const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">\xD7</button></div><iframe class="chatbot-iframe" src="' + chatbotUrlWithParams + '" title="AI Chatbot"></iframe></div></div>';
       function initializeChatbot() {
         // Check localStorage for 'Value'
         const value = localStorage.getItem('Value');
+        // List of allowed codes
+        const allowedCodes = [
+          'LVISG','SGCSBJK','SMCSRKJ','SJCHSN','MLZSBSP','HPSJC','CEVMWM','BCRSTK','HTCDJK','HFCKJK','GWISDOB','VJSKKR','SVPSKC','THARCH','NDSISJ','FACSPG','CTSBKA','SHCSVC','AISMBD','BLOSSOM','BISPVDL','STHLUP','SPHSLJ','VWSSUP','VWSBBK','STSDLJH','SSVVSAP','JRSBKL','SVSNMH','CHRIST','SSIKK','BISHOPS','GEDEETN','STPAULKG','SJCQPB','SMCTHR','MMPSJC','LFCUJK','CJSNAM','GBGSWB','BDSISM','SDPSPD','TJISCG','SPCHSG','SJHSKC','AWSMURD','SMESSG','SXSGAN','CSAGUJ','SMSGRG','SSGVSG','SMSMGJ','SMSVGJ','SFSJPG','SMSBRG','DWPSUP','SJSKGP','GHSKC','DVMROD','SPHSBC','LRVIAN','SAPSJC','LJKNGP','CDSKGP','ILAHSR','DIVINE','SJSKKL','MAISKMK','DPSABH','GISNUP','GISFUP','CTKHSUP','MSICUP','SJSBRL','GICBUP','SMCPUP','DVVICK','LFSMGK','SPCDUP','LFVNKR','TOLINS','JPSV','KJSBLR','CMPSAK','DPSSAC','SRVMSC','EESMWB','EISDRJ','CSVGUJ','SOPHIA','CSRGUJ','LFSGKP','OXFDGW','JKGISV','FCHSBJ','SADDN','NEMSMP','MMCHSC','SACSVP','GNPSRK','GCMCSN','HCCSRS','SHCHSB','SOSGAD','BLSWSG','HITECH','SSHEDU','GDGPSA','SXHSRH','AISDEL','SPAKKM','SATLUJ','RASSAZ','VYASWS','DAVNIT','BPSTGR','GPSSBL','STCSBR','BPSPVG','RBAKHA','RTSJWR','IPSFBD','SPTRS','GDGPSP','DPRESI','VISPRV','DPSMAK','GDGPSC','LAHRSC','KNTLPR','KNTLSR','SMSKNK','CTKCSB','CISERP','TCSERP','STJOAN','AHSBYS','AHSGRL','STSUDP','AEASNM','LAXPSK','SHPSKM','JKGISG','NNHSDC','STCLRT','DARSAN','VIDYAB','ISRJR','GHSSMP','MNSJKP','NDAMBR','SMCHSS','NHSJAT','PCHSJK','PCSJAT','VVCHSA','SMERC','PUSHPA','CJSARKS','HCSKAPA','ARYANVNS','CJSARK','CHRISTKR','STTHOMAS','VVVMMP','VKVRDV','VKVHRJ','MMSJKP','DSKEND','SCWPUC','TAACBH','CPSRJK','SPSBUP','SPAMUP','SPAGKP','TVMHSN','GDGSSV','AJPSKRP','LFSBUP','KPSUTN','KMHSUTN','KMHSS','KPSSS','SFSAJK','TAPSPH','SJCGHS','SJPSBR','SPSMTDY','LFCSDLPB','DBESBP','AUXBANDEL','HFSINDORE','CSTIANS','MCSHJH','SICCUP','NHESBJ','MSGNRD','VJSGJH','MHCMBR','BMSSSK','JMPSWB','DWPSBT','ABSBBK','SHCSRT','SXCKTH','JKPSKJ','SPHSKB','BPSMVD','MAPNGP','SJBSJL','CRMLSD','SHCSMW','STCFDB','SJSHDI','MSCDIB','CSKBOK','LFSGDP','TGFSKU','CJMWAV','DFSTNA','SHCSML','MONAGT','BDAVTJ'
+        ];
+        if (!allowedCodes.includes(value)) {
+          console.log('Value is not in allowed codes, so not showing the chatbot button');
+          return;
+        }
         
         const container = document.createElement('div');
         container.innerHTML = chatbotHTML;
@@ -832,6 +1048,8 @@ var vite_config_default = defineConfig({
   },
   root: posixPath.resolve(__dirname, "client"),
   build: {
+    target: "es2015",
+    // Ensures compatibility with older browsers like Edge
     outDir: posixPath.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {

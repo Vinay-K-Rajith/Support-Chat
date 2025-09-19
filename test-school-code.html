@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test School Code Parameter</title>
+</head>
+<body>
+    <h1>Test School Code Parameter</h1>
+    
+    <div style="margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <h3>Setup Test Environment</h3>
+        <label for="schoolCodeInput">Enter School Code:</label>
+        <input type="text" id="schoolCodeInput" placeholder="Enter school code (e.g., ABC123)" style="margin: 0 10px; padding: 5px;">
+        <button onclick="setSchoolCode()" style="padding: 5px 10px;">Set School Code in localStorage</button>
+        
+        <div style="margin-top: 10px;">
+            <strong>Current localStorage['Value']: </strong>
+            <span id="currentSchoolCode"></span>
+        </div>
+    </div>
+
+    <div style="margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <h3>Test URL Construction</h3>
+        <p>Expected chatbot URL format: <code>https://supportchat.entab.net/?schoolCode=SCHOOLCODE</code></p>
+        
+        <button onclick="testUrlConstruction()" style="padding: 5px 10px;">Test URL Construction</button>
+        
+        <div id="urlTestResult" style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; display: none;">
+            <strong>Constructed URL: </strong>
+            <span id="constructedUrl"></span>
+        </div>
+    </div>
+
+    <div style="margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <h3>Test Chatbot Integration</h3>
+        <p>Load the inject.js to see the chatbot with school code</p>
+        <button onclick="loadChatbot()" style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 3px;">Load Chatbot</button>
+        
+        <div id="chatbotStatus" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        // Update display on page load
+        updateDisplay();
+
+        function setSchoolCode() {
+            const schoolCode = document.getElementById('schoolCodeInput').value;
+            if (schoolCode.trim()) {
+                localStorage.setItem('Value', schoolCode.trim());
+                updateDisplay();
+                alert('School code set: ' + schoolCode.trim());
+            } else {
+                alert('Please enter a valid school code');
+            }
+        }
+
+        function updateDisplay() {
+            const currentCode = localStorage.getItem('Value') || '(not set)';
+            document.getElementById('currentSchoolCode').textContent = currentCode;
+        }
+
+        function testUrlConstruction() {
+            const schoolCode = localStorage.getItem('Value') || '';
+            const baseUrl = 'https://supportchat.entab.net/';
+            const constructedUrl = schoolCode ? `${baseUrl}?schoolCode=${encodeURIComponent(schoolCode)}` : baseUrl;
+            
+            document.getElementById('constructedUrl').textContent = constructedUrl;
+            document.getElementById('urlTestResult').style.display = 'block';
+            
+            console.log('🏫 School code from localStorage:', schoolCode);
+            console.log('🌐 Constructed URL:', constructedUrl);
+        }
+
+        function loadChatbot() {
+            const schoolCode = localStorage.getItem('Value');
+            if (!schoolCode) {
+                alert('Please set a school code first!');
+                return;
+            }
+
+            // Load the inject.js script from your server
+            const script = document.createElement('script');
+            script.src = 'http://localhost:5002/inject.js'; // Adjust port if needed
+            script.onload = function() {
+                document.getElementById('chatbotStatus').innerHTML = 
+                    '<div style="color: green;">✅ Chatbot loaded! Check the bottom-right corner of the page.</div>' +
+                    '<div style="margin-top: 5px; font-size: 12px; color: #666;">The chatbot should be loaded with school code: <strong>' + schoolCode + '</strong></div>';
+            };
+            script.onerror = function() {
+                document.getElementById('chatbotStatus').innerHTML = 
+                    '<div style="color: red;">❌ Failed to load chatbot. Make sure your server is running on http://localhost:5002</div>';
+            };
+            document.head.appendChild(script);
+        }
+
+        // Test URL parameters reading (simulating what the chatbot does)
+        function testUrlParameterReading() {
+            // This simulates what the useChat hook does
+            const urlParams = new URLSearchParams(window.location.search);
+            const schoolParam = urlParams.get('schoolCode');
+            console.log('🔍 School parameter from URL:', schoolParam);
+            return schoolParam;
+        }
+    </script>
+</body>
+</html>

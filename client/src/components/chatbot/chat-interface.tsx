@@ -16,7 +16,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, sendMessage, isLoading, schoolCode } = useChat();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -205,6 +205,7 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                   isUser={false}
                   timestamp={new Date()}
                   isFirstBotMessage={true}
+                  schoolCode={schoolCode || undefined}
                 />
               </div>
             </div>
@@ -220,6 +221,7 @@ export function ChatInterface({ isOpen, onClose }: ChatInterfaceProps) {
                     isUser={msg.isUser}
                     timestamp={msg.timestamp ? new Date(msg.timestamp) : new Date()}
                     isFirstBotMessage={false}
+                    schoolCode={schoolCode || undefined}
                   />
                 </div>
               </div>

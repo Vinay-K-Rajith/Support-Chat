@@ -8,6 +8,7 @@ interface MessageBubbleProps {
   isUser: boolean;
   timestamp: Date;
   isFirstBotMessage?: boolean; // New prop to control ticket prompt
+  schoolCode?: string; // Add schoolCode prop
 }
 
 // Helper to linkify URLs and emails in a string or array of strings/JSX
@@ -258,7 +259,7 @@ function formatMessageContent(content: string, isUser: boolean): JSX.Element {
   );
 }
 
-export function MessageBubble({ content, isUser, timestamp, isFirstBotMessage = false }: MessageBubbleProps) {
+export function MessageBubble({ content, isUser, timestamp, isFirstBotMessage = false, schoolCode }: MessageBubbleProps) {
   // Animation state for bot messages
   const [visibleWords, setVisibleWords] = useState<number>(isUser ? Infinity : 0);
   const words = useMemo(() => content.split(/(\s+)/), [content]);
@@ -320,7 +321,7 @@ export function MessageBubble({ content, isUser, timestamp, isFirstBotMessage = 
                   await fetch(`/api/support/ticket-click`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId }),
+                    body: JSON.stringify({ sessionId, schoolCode }),
                   });
                 } catch {}
                 window.open('https://entab.online/admin/freshdesk-ticket', '_blank', 'noopener,noreferrer');

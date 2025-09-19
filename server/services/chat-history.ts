@@ -3,23 +3,35 @@ import MongoClientService from "./mongo-client";
 const DB_NAME = "test";
 const COLLECTION = "support_chat_history";
 
-export async function getAllChatSessions() {
+export async function getAllChatSessions(schoolCode?: string) {
   await MongoClientService.connect();
   const db = MongoClientService.getDb(DB_NAME);
-  const sessions = await db.collection(COLLECTION).aggregate([
+  
+  const pipeline: any[] = [];
+  
+  // Add match stage for school code filtering if provided
+  if (schoolCode) {
+    pipeline.push({ $match: { schoolCode: schoolCode } });
+  }
+  
+  pipeline.push(
     { $group: {
       _id: "$sessionId",
       lastMessageAt: { $max: "$timestamp" },
       count: { $sum: 1 },
-      firstMessage: { $first: "$content" }
+      firstMessage: { $first: "$content" },
+      schoolCode: { $first: "$schoolCode" }
     }},
     { $sort: { lastMessageAt: -1 } }
-  ]).toArray();
+  );
+  
+  const sessions = await db.collection(COLLECTION).aggregate(pipeline).toArray();
   return sessions.map(s => ({
     sessionId: s._id,
     lastMessageAt: s.lastMessageAt,
     messageCount: s.count,
-    firstMessage: s.firstMessage
+    firstMessage: s.firstMessage,
+    schoolCode: s.schoolCode
   }));
 }
 
@@ -33,20 +45,23 @@ export async function getChatMessagesBySession(sessionId: string) {
   return messages;
 }
 
-export async function saveChatMessage({ sessionId, content, isUser, timestamp }: { sessionId: string, content: string, isUser: boolean, timestamp?: Date }) {
+export async function saveChatMessage({ sessionId, content, isUser, timestamp, schoolCode }: { sessionId: string, content: string, isUser: boolean, timestamp?: Date, schoolCode?: string }) {
   await MongoClientService.connect();
   const db = MongoClientService.getDb(DB_NAME);
   const doc = {
     sessionId,
     content,
     isUser,
-    timestamp: timestamp || new Date()
+    timestamp: timestamp || new Date(),
+    schoolCode: schoolCode || null
   };
+  console.log("💾 Saving message to DB:", { sessionId, isUser: isUser, schoolCode: schoolCode, contentLength: content.length });
   await db.collection(COLLECTION).insertOne(doc);
+  console.log("✅ Message saved successfully");
   return doc;
 }
 
-export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
+export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly', schoolCode?: string) {
   await MongoClientService.connect();
   const db = MongoClientService.getDb(DB_NAME);
   let groupId: any = {};
@@ -67,13 +82,22 @@ export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
       month: { $month: "$timestamp" }
     };
   }
-  const pipeline = [
+  
+  const pipeline: any[] = [];
+  
+  // Add match stage for school code filtering if provided
+  if (schoolCode) {
+    pipeline.push({ $match: { schoolCode: schoolCode } });
+  }
+  
+  pipeline.push(
     { $group: {
       _id: groupId,
       count: { $sum: 1 }
     }},
     { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1, "_id.week": 1 } }
-  ];
+  );
+  
   const results = await db.collection(COLLECTION).aggregate(pipeline).toArray();
   return results.map(r => {
     let period = '';
@@ -88,7 +112,7 @@ export async function getUsageStats(type: 'daily' | 'weekly' | 'monthly') {
   });
 }
 
-export async function getHourlyUsageStats(dateStr?: string) {
+export async function getHourlyUsageStats(dateStr?: string, schoolCode?: string) {
   await MongoClientService.connect();
   const db = MongoClientService.getDb(DB_NAME);
   let match: any = {};
@@ -105,6 +129,12 @@ export async function getHourlyUsageStats(dateStr?: string) {
     end = new Date(`${yyyy}-${mm}-${dd}T23:59:59.999Z`);
   }
   match = { timestamp: { $gte: start, $lte: end } };
+  
+  // Add school code filtering if provided
+  if (schoolCode) {
+    match.schoolCode = schoolCode;
+  }
+  
   const pipeline = [
     { $match: match },
     { $group: {

@@ -45,6 +45,7 @@ export class MemStorage implements IStorage {
     const session: ChatSession = {
       id: Date.now(),
       sessionId: insertSession.sessionId,
+      schoolCode: insertSession.schoolCode || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

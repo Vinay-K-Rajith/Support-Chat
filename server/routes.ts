@@ -25,8 +25,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new chat session
   app.post("/api/chat/session", async (req, res) => {
     try {
+      const { schoolCode } = req.body;
+      console.log("🏦 Creating session with schoolCode:", schoolCode);
+      console.log("🔍 DEBUG - Full session request body:", JSON.stringify(req.body));
+      console.log("🔍 DEBUG - session schoolCode type:", typeof schoolCode, "value:", schoolCode);
       const sessionId = nanoid();
-      const session = await storage.createChatSession({ sessionId });
+      const session = await storage.createChatSession({ sessionId, schoolCode });
       res.json({ sessionId: session.sessionId });
     } catch (error) {
       console.error("Error creating chat session:", error);
@@ -37,7 +41,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Chat History API ---
   app.get("/api/chat/sessions", async (req, res) => {
     try {
-      const sessions = await getAllChatSessions();
+      const schoolCode = req.query.schoolCode as string;
+      const sessions = await getAllChatSessions(schoolCode);
       res.json({ sessions });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch chat sessions" });
@@ -56,7 +61,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/chat/message", async (req, res) => {
     try {
-      const { sessionId, content } = req.body;
+      const { sessionId, content, schoolCode } = req.body;
+      console.log("💬 Message with schoolCode:", schoolCode, "for session:", sessionId);
+      console.log("🔍 DEBUG - Full request body:", JSON.stringify(req.body));
+      console.log("🔍 DEBUG - schoolCode type:", typeof schoolCode, "value:", schoolCode);
       if (!sessionId || !content) {
         return res.status(400).json({ error: "Session ID and content are required" });
       }
@@ -65,7 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId,
         content,
         isUser: true,
-        timestamp: new Date()
+        timestamp: new Date(),
+        schoolCode
       });
       // Generate AI response
       const aiResponse = await generateResponse(content, sessionId);
@@ -74,7 +83,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId,
         content: aiResponse,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        schoolCode
       });
       res.json({ userMessage, aiMessage });
     } catch (error) {
@@ -86,7 +96,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat/usage", async (req, res) => {
     try {
       const type = req.query.type as 'daily' | 'weekly' | 'monthly' || 'daily';
-      const usage = await getUsageStats(type);
+      const schoolCode = req.query.schoolCode as string;
+      const usage = await getUsageStats(type, schoolCode);
       res.json({ usage });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch usage stats" });
@@ -96,22 +107,233 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat/usage/hourly", async (req, res) => {
     try {
       const date = req.query.date as string | undefined;
-      const usage = await getHourlyUsageStats(date);
+      const schoolCode = req.query.schoolCode as string;
+      const usage = await getHourlyUsageStats(date, schoolCode);
       res.json({ usage });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch hourly usage stats" });
     }
   });
 
+  // --- DEBUG: Check Database Contents ---
+  app.get("/api/debug/messages", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      const messages = await db.collection("support_chat_history")
+        .find({})
+        .sort({ timestamp: -1 })
+        .limit(10)
+        .toArray();
+      res.json({ messages });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch debug messages" });
+    }
+  });
+
+  // --- School-wise Analytics ---
+  app.get("/api/chat/schools", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      const schools = await db.collection("support_chat_history").distinct("schoolCode");
+      // Filter out null values and sort
+      const validSchools = schools.filter(school => school && school !== null).sort();
+      res.json({ schools: validSchools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch school codes" });
+    }
+  });
+
+  app.get("/api/chat/schools/stats", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      const pipeline = [
+        { $match: { schoolCode: { $nin: [null, ""] } } },
+        { $group: {
+          _id: "$schoolCode",
+          messageCount: { $sum: 1 },
+          sessionCount: { $addToSet: "$sessionId" },
+          lastActivity: { $max: "$timestamp" },
+          firstActivity: { $min: "$timestamp" }
+        }},
+        { $addFields: {
+          sessionCount: { $size: "$sessionCount" }
+        }},
+        { $sort: { messageCount: -1 } }
+      ];
+      const stats = await db.collection("support_chat_history").aggregate(pipeline).toArray();
+      const formattedStats = stats.map(stat => ({
+        schoolCode: stat._id,
+        messageCount: stat.messageCount,
+        sessionCount: stat.sessionCount,
+        lastActivity: stat.lastActivity,
+        firstActivity: stat.firstActivity
+      }));
+      res.json({ stats: formattedStats });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch school stats" });
+    }
+  });
+
+  // --- School Management API ---
+  app.get("/api/schools", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      const schools = await db.collection("support_schools").find({}).toArray();
+      res.json({ schools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch schools" });
+    }
+  });
+
+  app.get("/api/schools/analytics", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      // Get all schools from support_schools collection
+      const allSchools = await db.collection("support_schools").find({}).toArray();
+      const totalSchools = allSchools.length;
+      
+      // Get active schools from chat history (schools that have sent messages)
+      const activeSchoolCodes = await db.collection("support_chat_history")
+        .distinct("schoolCode", { schoolCode: { $nin: [null, ""] } });
+      const activeSchools = activeSchoolCodes.length;
+      
+      // Calculate inactive schools
+      const inactiveSchools = totalSchools - activeSchools;
+      const adoptionRate = totalSchools > 0 ? Math.round((activeSchools / totalSchools) * 100) : 0;
+      
+      // Get school usage stats with names
+      const usageStats = await db.collection("support_chat_history").aggregate([
+        { $match: { schoolCode: { $nin: [null, ""] } } },
+        { $group: {
+          _id: "$schoolCode",
+          messageCount: { $sum: 1 },
+          sessionCount: { $addToSet: "$sessionId" },
+          lastActivity: { $max: "$timestamp" },
+          firstActivity: { $min: "$timestamp" }
+        }},
+        { $addFields: {
+          sessionCount: { $size: "$sessionCount" }
+        }},
+        { $lookup: {
+          from: "support_schools",
+          localField: "_id",
+          foreignField: "schoolcode",
+          as: "schoolInfo"
+        }},
+        { $sort: { lastActivity: -1 } }
+      ]).toArray();
+      
+      // Get monthly adoption trend (last 6 months)
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const adoptionTrend = await db.collection("support_chat_history").aggregate([
+        { $match: { 
+          schoolCode: { $nin: [null, ""] },
+          timestamp: { $gte: sixMonthsAgo }
+        }},
+        { $group: {
+          _id: {
+            year: { $year: "$timestamp" },
+            month: { $month: "$timestamp" },
+            schoolCode: "$schoolCode"
+          }
+        }},
+        { $group: {
+          _id: {
+            year: "$_id.year",
+            month: "$_id.month"
+          },
+          activeSchools: { $sum: 1 }
+        }},
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+      ]).toArray();
+      
+      res.json({
+        totalSchools,
+        activeSchools,
+        inactiveSchools,
+        adoptionRate,
+        usageStats,
+        adoptionTrend
+      });
+    } catch (error) {
+      console.error("School analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch school analytics" });
+    }
+  });
+
+  app.get("/api/schools/active", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      const recentActive = await db.collection("support_chat_history").aggregate([
+        { $match: { 
+          schoolCode: { $nin: [null, ""] },
+          timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
+        }},
+        { $group: {
+          _id: "$schoolCode",
+          lastActivity: { $max: "$timestamp" },
+          messageCount: { $sum: 1 }
+        }},
+        { $lookup: {
+          from: "support_schools",
+          localField: "_id",
+          foreignField: "schoolcode",
+          as: "schoolInfo"
+        }},
+        { $sort: { lastActivity: -1 } }
+      ]).toArray();
+      
+      res.json({ schools: recentActive });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch active schools" });
+    }
+  });
+
+  app.get("/api/schools/inactive", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      // Get all schools
+      const allSchools = await db.collection("support_schools").find({}).toArray();
+      
+      // Get schools that have never sent messages or haven't sent in 30+ days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const activeSchoolCodes = await db.collection("support_chat_history")
+        .distinct("schoolCode", { 
+          schoolCode: { $nin: [null, ""] },
+          timestamp: { $gte: thirtyDaysAgo }
+        });
+      
+      const inactiveSchools = allSchools
+        .filter(school => !activeSchoolCodes.includes(school.schoolcode));
+      
+      res.json({ schools: inactiveSchools });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch inactive schools" });
+    }
+  });
+
   // --- Ticket Click Logging ---
   app.post("/api/support/ticket-click", async (req, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, schoolCode } = req.body;
       await MongoClientService.connect();
       const db = MongoClientService.getDb("test");
       await db.collection("ticket").insertOne({
         timestamp: new Date(),
         sessionId: sessionId || null,
+        schoolCode: schoolCode || null,
       });
       res.json({ success: true });
     } catch (error) {
@@ -345,7 +567,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       document.head.appendChild(styleSheet);
       const chatbotIconUrl = 'https://static.vecteezy.com/system/resources/previews/015/911/602/non_2x/customer-support-icon-outline-style-vector.jpg';
       // Add the AI badge beside the Support title in the header, and simply display "BETA" next to it
-      const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + config.chatbotUrl + '" title="AI Chatbot"></iframe></div></div>';
+          // Construct chatbot URL with school code parameter
+          const schoolCode = localStorage.getItem('Value') || '';
+          const chatbotUrlWithParams = config.chatbotUrl + (config.chatbotUrl.includes('?') ? '&' : '?') + 'schoolCode=' + encodeURIComponent(schoolCode);
+          console.log('🏫 INJECT.JS - School code from localStorage:', schoolCode);
+          console.log('🔗 INJECT.JS - Chatbot URL with params:', chatbotUrlWithParams);
+          const chatbotHTML = '<div class="chatbot-container ' + config.position + '"><button class="chatbot-button" id="chatbotToggle"><span class="chatbot-icon-img-wrapper"><img src="' + chatbotIconUrl + '" alt="Support" class="chatbot-icon-img"/></span></button><div class="chatbot-widget" id="chatbotWidget"><div class="chatbot-header"><div class="chatbot-title">' + config.chatbotTitle + '<span class="chatbot-ai-badge">AI</span><span style="margin-left:0.5em; font-size:0.95em; color:#fff; font-weight:500;">BETA</span></div><button class="chatbot-close" id="chatbotClose">×</button></div><iframe class="chatbot-iframe" src="' + chatbotUrlWithParams + '" title="AI Chatbot"></iframe></div></div>';
       function initializeChatbot() {
         // Check localStorage for 'Value'
         const value = localStorage.getItem('Value');

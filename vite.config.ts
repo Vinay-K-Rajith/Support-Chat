@@ -18,6 +18,7 @@ export default defineConfig({
   },
   root: posixPath.resolve(__dirname, "client"),
   build: {
+    target: 'es2015', // Ensures compatibility with older browsers like Edge
     outDir: posixPath.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {

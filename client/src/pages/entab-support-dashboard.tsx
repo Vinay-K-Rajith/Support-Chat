@@ -70,15 +70,16 @@ const sidebarTabs = [
   { key: "dashboard", label: "Dashboard", icon: <HomeIcon /> },
   { key: "knowledge", label: "Knowledge Base", icon: <MenuBookIcon /> },
   { key: "chat", label: "Chat History", icon: <MenuBookIcon /> },
+  { key: "schools", label: "School Management", icon: <MenuBookIcon /> },
 ];
 
 // --- Enhance card and typography styling for a more modern look ---
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <Card sx={{ minWidth: 200, minHeight: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #e0f2f1', bgcolor: '#fafdff', transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 6 } }}>
-      <CardContent>
-        <Typography variant="subtitle2" sx={{ color: '#018b8a', mb: 1, fontWeight: 700, letterSpacing: 0.5 }}>{label}</Typography>
-        <Typography variant="h4" fontWeight={800} color="#014d4e" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 36 }}>{value}</Typography>
+    <Card sx={{ flex: 1, minWidth: 180, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #e0f2f1', bgcolor: '#fafdff', transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 6 } }}>
+      <CardContent sx={{ py: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ color: '#018b8a', mb: 0.5, fontWeight: 700, letterSpacing: 0.5, fontSize: 13 }}>{label}</Typography>
+        <Typography variant="h4" fontWeight={800} color="#014d4e" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 32 }}>{value}</Typography>
       </CardContent>
     </Card>
   );
@@ -293,77 +294,158 @@ export default function EntabSupportDashboard() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#eaf1fb', display: 'flex', flexDirection: 'column', alignItems: 'center', py: 6 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#eaf1fb', display: 'flex', flexDirection: 'row' }}>
       <Drawer
         variant="permanent"
-        PaperProps={{
-          sx: {
-            bgcolor: '#014d4e', // dark aquamarine
+        sx={{
+          width: 280,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+            background: 'linear-gradient(180deg, #0f766e 0%, #115e59 100%)',
             color: 'white',
-            width: 220,
             border: 0,
-            boxShadow: 3,
-            borderRadius: 0,
+            boxShadow: '4px 0 20px rgba(0, 0, 0, 0.1)',
+            position: 'fixed',
+            height: '100vh',
+            left: 0,
+            top: 0,
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '1px',
+              height: '100%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%)'
+            }
           }
         }}
       >
-        <Box sx={{ px: 3, py: 4, mb: 2 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 0.5, lineHeight: 1.1, letterSpacing: 0.5 }}>{schoolName}</Typography>
-          <Typography variant="caption" sx={{ color: '#7de2d1', fontFamily: 'monospace', fontWeight: 600 }}>{schoolCode}</Typography>
+        {/* Logo Section */}
+        <Box sx={{ 
+          px: 4, 
+          py: 4, 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+          bgcolor: 'rgba(255, 255, 255, 0.05)'
+        }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontSize: 24, 
+              fontWeight: 700, 
+              letterSpacing: '-0.5px', 
+              mb: 1,
+              color: 'white'
+            }}
+          >
+            Entab Support
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontSize: 13, 
+              opacity: 0.8, 
+              fontWeight: 500, 
+              letterSpacing: 0.5, 
+              textTransform: 'uppercase',
+              color: 'white'
+            }}
+          >
+            ENTAB
+          </Typography>
         </Box>
-        <List>
-          {sidebarTabs.map(n => (
-            <ListItem key={n.key} disablePadding sx={{ borderRadius: 2, mb: 0.5 }}>
-              <ListItemButton
-                selected={tab === n.key}
-                onClick={() => setTab(n.key)}
-                sx={{
-                  borderRadius: 2,
-                  bgcolor: tab === n.key ? '#017c7b' : 'inherit',
-                  color: tab === n.key ? '#fff' : '#e0f7fa',
-                  '&:hover': {
-                    bgcolor: '#016060',
-                  },
-                  '&.Mui-selected': {
-                    bgcolor: '#017c7b',
-                    color: '#fff',
-                  },
-                  '&.Mui-selected:hover': {
-                    bgcolor: '#018b8a',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: tab === n.key ? '#fff' : '#b2f7ef', minWidth: 36 }}>{n.icon}</ListItemIcon>
-                <ListItemText primary={n.label} primaryTypographyProps={{ sx: { color: tab === n.key ? '#fff' : '#b2f7ef', fontWeight: 600, letterSpacing: 0.2 } }} />
-              </ListItemButton>
-            </ListItem>
+        
+        {/* Navigation Menu */}
+        <Box component="nav" sx={{ flex: 1, py: 3 }}>
+          {sidebarTabs.map((item) => (
+            <Box
+              key={item.key}
+              component="div"
+              onClick={() => setTab(item.key)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                py: 2,
+                px: 3,
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: 15,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderLeft: '3px solid transparent',
+                position: 'relative',
+                ...(tab === item.key && {
+                  bgcolor: 'rgba(255, 255, 255, 0.15)',
+                  color: 'white',
+                  borderLeftColor: '#10b981',
+                  fontWeight: 600
+                }),
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  borderLeftColor: 'rgba(255, 255, 255, 0.5)'
+                }
+              }}
+            >
+              <Box sx={{ 
+                width: 20, 
+                height: 20, 
+                mr: 2, 
+                opacity: 0.9,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {item.icon}
+              </Box>
+              <Typography component="span" sx={{ fontWeight: 'inherit' }}>
+                {item.label}
+              </Typography>
+            </Box>
           ))}
-        </List>
-        {/* Logout Button */}
-        <Box sx={{ px: 3, py: 2, mt: 2 }}>
+        </Box>
+        
+        {/* Logout Section */}
+        <Box sx={{ px: 3, py: 3, borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}>
           <Button
-            variant="outlined"
-            color="error"
             fullWidth
-            sx={{ fontWeight: 700, borderWidth: 2, borderColor: '#ff5252', color: '#ff5252', '&:hover': { bgcolor: '#ffebee', borderColor: '#ff1744', color: '#d32f2f' } }}
             onClick={() => {
               localStorage.clear();
               window.location.href = '/login';
             }}
+            sx={{
+              py: 1.75,
+              px: 2.5,
+              bgcolor: 'rgba(239, 68, 68, 0.9)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 2,
+              fontWeight: 600,
+              fontSize: 14,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'rgba(220, 38, 38, 0.95)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+              }
+            }}
           >
-            Logout
+            LOGOUT →
           </Button>
         </Box>
       </Drawer>
-      <Box sx={{ flex: 1, py: 4, ml: '220px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', px: 0 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', width: 'calc(100vw - 280px)', ml: 0 }}>
         {/* Top Bar */}
         {/* Removed the Entab Support Dashboard heading as requested */}
-        <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
-          <Paper sx={{ width: '100%', p: 4, borderRadius: 3, boxShadow: 2, mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box sx={{ width: '100%', px: 2, py: 1 }}>
+          <Paper sx={{ width: '100%', p: 2, borderRadius: 3, boxShadow: 2, display: 'flex', flexDirection: 'column' }}>
             {tab === "dashboard" && (
               <>
                 {/* Summary Cards */}
-                <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap', justifyContent: 'space-between', width: '100%' }}>
                   <SummaryCard label="Total Sessions" value={totalSessions} />
                   <SummaryCard label="Total Messages" value={totalMessages} />
                   <SummaryCard label="Active Sessions Today" value={activeSessionsToday} />
@@ -375,27 +457,23 @@ export default function EntabSupportDashboard() {
                   width: '100%',
                   display: 'flex',
                   flexDirection: { xs: 'column', md: 'row' },
-                  gap: 4,
-                  mb: 4,
-                  justifyContent: 'center',
+                  gap: 1.5,
+                  mb: 2,
                   alignItems: 'stretch',
                 }}>
                   {/* Usage Graph */}
                   <Paper elevation={3} sx={{
                     flex: 1,
-                    minWidth: 320,
-                    maxWidth: 480,
-                    p: 3,
+                    minWidth: 280,
+                    p: 2,
                     borderRadius: 4,
                     border: '1.5px solid #e0e7ef',
                     bgcolor: '#fafdff',
                     boxShadow: 2,
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
                   }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 2 }}>
-                      <Typography variant="h6" fontWeight={600}></Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', width: '100%', mb: 2, gap: 2 }}>
                       <Tabs value={usageType} onChange={(_, v) => setUsageType(v)}>
                         <Tab value="daily" label="Daily" />
                         <Tab value="weekly" label="Weekly" />
@@ -408,7 +486,7 @@ export default function EntabSupportDashboard() {
                           size="small"
                           value={hourlyDate}
                           onChange={e => setHourlyDate(e.target.value)}
-                          sx={{ ml: 2, minWidth: 140 }}
+                          sx={{ minWidth: 140 }}
                           inputProps={{ max: dayjs().format('YYYY-MM-DD') }}
                         />
                       )}
@@ -429,16 +507,14 @@ export default function EntabSupportDashboard() {
                   {/* Ticket Stats Graph */}
                   <Paper elevation={3} sx={{
                     flex: 1,
-                    minWidth: 320,
-                    maxWidth: 480,
-                    p: 3,
+                    minWidth: 280,
+                    p: 2,
                     borderRadius: 4,
                     border: '1.5px solid #ffe0b2',
                     bgcolor: '#fffaf5',
                     boxShadow: 2,
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
                   }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 2 }}>
                       <Typography variant="h6" fontWeight={600} sx={{ color: '#f59e42' }}>Tickets Created (Hourly)</Typography>
@@ -454,7 +530,7 @@ export default function EntabSupportDashboard() {
                   </Paper>
                 </Box>
                 {/* Recent Activity */}
-                <Box sx={{ width: '100%', maxWidth: 700 }}>
+                <Box sx={{ width: '100%' }}>
                   <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Recent Activity</Typography>
                   <Paper sx={{ width: '100%', overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -496,9 +572,40 @@ export default function EntabSupportDashboard() {
                 </Box>
               </>
             )}
-            {tab === "chat" && <Typography variant="h5" sx={{ textAlign: 'center', mb: 2 }}>Chat History</Typography>}
-            {tab === "chat" && <Typography sx={{ textAlign: 'center', mb: 4, color: '#2563eb' }}>Review previous support chats.</Typography>}
-            {tab === "chat" && <ChatHistory />}
+            {tab === "chat" && (
+              <>
+                <Box sx={{ width: '100%', mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box sx={{ maxWidth: 1200, width: '100%', mb: 2 }}>
+                    <Typography variant="h3" fontWeight={700} sx={{ color: '#1e293b', fontSize: 28, letterSpacing: 0, lineHeight: 1.15, mb: 1 }}>
+                      Chat History
+                    </Typography>
+                    <Typography sx={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>
+                      Review previous support chats.
+                    </Typography>
+                  </Box>
+                  <Paper sx={{ width: '100%', maxWidth: 1200, p: 0, borderRadius: 3, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+                    <ChatHistory />
+                  </Paper>
+                </Box>
+              </>
+            )}
+            {tab === "schools" && (
+              <>
+                <Box sx={{ width: '100%', mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box sx={{ maxWidth: 1200, width: '100%', mb: 2 }}>
+                    <Typography variant="h3" fontWeight={700} sx={{ color: '#1e293b', fontSize: 28, letterSpacing: 0, lineHeight: 1.15, mb: 1 }}>
+                      School Management
+                    </Typography>
+                    <Typography sx={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>
+                      Monitor school adoption, usage analytics, and generate comprehensive reports.
+                    </Typography>
+                  </Box>
+                  <Paper sx={{ width: '100%', maxWidth: 1200, p: 0, borderRadius: 3, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+                    <SchoolManagement />
+                  </Paper>
+                </Box>
+              </>
+            )}
           </Paper>
         </Box>
       </Box>
@@ -773,6 +880,197 @@ function KnowledgeBaseEditor() {
   );
 }
 
+// School Management Component
+function SchoolManagement() {
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [activeSchools, setActiveSchools] = useState<any[]>([]);
+  const [inactiveSchools, setInactiveSchools] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [analyticsRes, activeRes, inactiveRes] = await Promise.all([
+          fetch('/api/schools/analytics'),
+          fetch('/api/schools/active'),
+          fetch('/api/schools/inactive')
+        ]);
+        
+        const analyticsData = await analyticsRes.json();
+        const activeData = await activeRes.json();
+        const inactiveData = await inactiveRes.json();
+        
+        setAnalytics(analyticsData);
+        setActiveSchools(activeData.schools || []);
+        setInactiveSchools(inactiveData.schools || []);
+      } catch (err) {
+        setError('Failed to load school management data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  const getActivityStatus = (messageCount: number) => {
+    if (messageCount > 50) return { label: 'Active', color: '#10b981' };
+    if (messageCount > 10) return { label: 'Limited', color: '#f59e0b' };
+    return { label: 'Inactive', color: '#ef4444' };
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress size={40} sx={{ color: '#0f766e' }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ width: '100%', p: 4 }}>
+      {/* Summary Cards */}
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 3, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <Card sx={{ flex: 1, minWidth: 180, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #e0f2f1', bgcolor: '#fafdff' }}>
+          <CardContent sx={{ py: 1.5, textAlign: 'center' }}>
+            <Box sx={{ fontSize: 24, mb: 1 }}>🏫</Box>
+            <Typography variant="subtitle2" sx={{ color: '#018b8a', mb: 0.5, fontWeight: 700, letterSpacing: 0.5, fontSize: 13 }}>Total Schools</Typography>
+            <Typography variant="h4" fontWeight={800} color="#014d4e" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 32 }}>{analytics?.totalSchools || 0}</Typography>
+          </CardContent>
+        </Card>
+        
+        <Card sx={{ flex: 1, minWidth: 180, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #dcfce7', bgcolor: '#f0fdf4' }}>
+          <CardContent sx={{ py: 1.5, textAlign: 'center' }}>
+            <Box sx={{ fontSize: 24, mb: 1 }}>✅</Box>
+            <Typography variant="subtitle2" sx={{ color: '#059669', mb: 0.5, fontWeight: 700, letterSpacing: 0.5, fontSize: 13 }}>Active Schools</Typography>
+            <Typography variant="h4" fontWeight={800} color="#065f46" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 32 }}>{analytics?.activeSchools || 0}</Typography>
+          </CardContent>
+        </Card>
+        
+        <Card sx={{ flex: 1, minWidth: 180, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #fed7d7', bgcolor: '#fffbfa' }}>
+          <CardContent sx={{ py: 1.5, textAlign: 'center' }}>
+            <Box sx={{ fontSize: 24, mb: 1 }}>⚠️</Box>
+            <Typography variant="subtitle2" sx={{ color: '#dc2626', mb: 0.5, fontWeight: 700, letterSpacing: 0.5, fontSize: 13 }}>Inactive Schools</Typography>
+            <Typography variant="h4" fontWeight={800} color="#991b1b" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 32 }}>{analytics?.inactiveSchools || 0}</Typography>
+          </CardContent>
+        </Card>
+        
+        <Card sx={{ flex: 1, minWidth: 180, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 2, borderRadius: 4, border: '1.5px solid #dbeafe', bgcolor: '#f8faff' }}>
+          <CardContent sx={{ py: 1.5, textAlign: 'center' }}>
+            <Box sx={{ fontSize: 24, mb: 1 }}>📈</Box>
+            <Typography variant="subtitle2" sx={{ color: '#2563eb', mb: 0.5, fontWeight: 700, letterSpacing: 0.5, fontSize: 13 }}>Adoption Rate</Typography>
+            <Typography variant="h4" fontWeight={800} color="#1d4ed8" sx={{ fontFamily: 'Inter, sans-serif', fontSize: 32 }}>{analytics?.adoptionRate || 0}%</Typography>
+          </CardContent>
+        </Card>
+      </Box>
+      
+      {/* Recently Active Schools */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#374151' }}>Recently Active Schools</Typography>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Paper sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 2, border: '1px solid #e5e7eb', bgcolor: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#059669', mr: 2 }}>Active ({activeSchools.length})</Typography>
+            </Box>
+            <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+              {activeSchools.map((school, idx) => {
+                const schoolInfo = school.schoolInfo?.[0];
+                const status = getActivityStatus(school.messageCount);
+                return (
+                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5, borderBottom: idx === activeSchools.length - 1 ? 'none' : '1px solid #f3f4f6' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ color: '#111827' }}>
+                        {schoolInfo?.name || school._id}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                        {school.messageCount} messages
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      bgcolor: status.color, 
+                      color: 'white', 
+                      px: 2, 
+                      py: 0.5, 
+                      borderRadius: 1, 
+                      fontSize: 12, 
+                      fontWeight: 600 
+                    }}>
+                      {status.label}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Paper>
+          
+          {/* Inactive Schools */}
+          <Paper sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 2, border: '1px solid #e5e7eb', bgcolor: 'white' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#dc2626', mr: 2 }}>Inactive ({inactiveSchools.length})</Typography>
+            </Box>
+            <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+              {inactiveSchools.map((school, idx) => (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5, borderBottom: idx === inactiveSchools.length - 1 ? 'none' : '1px solid #f3f4f6' }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" fontWeight={600} sx={{ color: '#111827' }}>
+                      {school.name || school.schoolcode}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                      No recent activity
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+                    bgcolor: '#6b7280', 
+                    color: 'white', 
+                    px: 2, 
+                    py: 0.5, 
+                    borderRadius: 1, 
+                    fontSize: 12, 
+                    fontWeight: 600 
+                  }}>
+                    Inactive
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Box>
+      </Box>
+      
+      {/* Generate Reports */}
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Button 
+          variant="contained" 
+          size="large"
+          sx={{ 
+            bgcolor: '#0f766e', 
+            color: 'white', 
+            px: 4, 
+            py: 1.5, 
+            borderRadius: 2,
+            fontWeight: 600,
+            '&:hover': { 
+              bgcolor: '#0d5b52'
+            }
+          }}
+        >
+          Generate Reports
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 function ChatHistory() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -851,52 +1149,200 @@ function ChatHistory() {
   }, [from, to, minMessages, sort]);
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 2 }}>
-      <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
-        <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Chat Sessions</Typography>
-        {/* Filter Row */}
-        <Box sx={{ display: 'flex', gap: 3, bgcolor: '#f3f6fb', p: 2, borderRadius: 2, mb: 3 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Sort</InputLabel>
-            <Select value={sort} label="Sort" onChange={e => setSort(e.target.value)}>
-              <MenuItem value="Newest">Newest</MenuItem>
-              <MenuItem value="Oldest">Oldest</MenuItem>
-            </Select>
-          </FormControl>
+    <>
+      <Box sx={{ width: '100%', p: 4 }}>
+      {/* Section Title with Accent Line - matching screenshot */}
+      <Typography 
+        variant="h4" 
+        fontWeight={700} 
+        sx={{ 
+          color: '#374151', 
+          fontSize: 24, 
+          display: 'flex', 
+          alignItems: 'center',
+          mb: 4,
+          '&::before': {
+            content: '""',
+            width: '4px',
+            height: '24px',
+            background: '#0f766e',
+            borderRadius: '2px',
+            marginRight: '16px'
+          }
+        }}
+      >
+        Chat Sessions
+      </Typography>
+      
+      {/* Filters Grid - matching screenshot */}
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(4, 1fr)', 
+        gap: 3, 
+        mb: 4, 
+        p: 3, 
+        bgcolor: '#f1f5f9', 
+        borderRadius: 1, 
+        border: '1px solid #e2e8f0' 
+      }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ 
+            fontSize: 12, 
+            fontWeight: 700, 
+            color: '#6b7280', 
+            mb: 1.5, 
+            textTransform: 'uppercase', 
+            letterSpacing: 1 
+          }}>Sort</Typography>
+          <Select 
+            value={sort} 
+            onChange={e => setSort(e.target.value)}
+            size="medium"
+            displayEmpty
+            sx={{ 
+              bgcolor: 'white', 
+              minHeight: 45,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+                border: '1px solid #d1d5db',
+                '&:hover fieldset': { borderColor: '#9ca3af' },
+                '&.Mui-focused fieldset': { borderColor: '#0f766e' }
+              },
+              '& .MuiSelect-select': {
+                py: 1.5,
+                fontSize: 14
+              }
+            }}
+          >
+            <MenuItem value="Newest">Newest</MenuItem>
+            <MenuItem value="Oldest">Oldest</MenuItem>
+            <MenuItem value="Most Interactions">Most Interactions</MenuItem>
+          </Select>
+        </Box>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ 
+            fontSize: 12, 
+            fontWeight: 700, 
+            color: '#6b7280', 
+            mb: 1.5, 
+            textTransform: 'uppercase', 
+            letterSpacing: 1 
+          }}>From</Typography>
           <TextField
-            label="From"
             type="date"
-            size="small"
-            InputLabelProps={{ shrink: true }}
+            placeholder="dd-mm-yyyy"
             value={from}
             onChange={e => setFrom(e.target.value)}
-            sx={{ minWidth: 160 }}
+            sx={{ 
+              bgcolor: 'white',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+                border: '1px solid #d1d5db',
+                minHeight: 45,
+                '&:hover fieldset': { borderColor: '#9ca3af' },
+                '&.Mui-focused fieldset': { borderColor: '#0f766e' }
+              },
+              '& .MuiInputBase-input': {
+                py: 1.5,
+                fontSize: 14
+              }
+            }}
           />
+        </Box>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ 
+            fontSize: 12, 
+            fontWeight: 700, 
+            color: '#6b7280', 
+            mb: 1.5, 
+            textTransform: 'uppercase', 
+            letterSpacing: 1 
+          }}>To</Typography>
           <TextField
-            label="To"
             type="date"
-            size="small"
-            InputLabelProps={{ shrink: true }}
+            placeholder="dd-mm-yyyy"
             value={to}
             onChange={e => setTo(e.target.value)}
-            sx={{ minWidth: 160 }}
+            sx={{ 
+              bgcolor: 'white',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+                border: '1px solid #d1d5db',
+                minHeight: 45,
+                '&:hover fieldset': { borderColor: '#9ca3af' },
+                '&.Mui-focused fieldset': { borderColor: '#0f766e' }
+              },
+              '& .MuiInputBase-input': {
+                py: 1.5,
+                fontSize: 14
+              }
+            }}
           />
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Messages</InputLabel>
-            <Select value={minMessages} label="Messages" onChange={e => setMinMessages(e.target.value)}>
-              <MenuItem value=">0">&gt;0</MenuItem>
-              <MenuItem value=">5">&gt;5</MenuItem>
-              <MenuItem value=">10">&gt;10</MenuItem>
-            </Select>
-          </FormControl>
         </Box>
-        {/* Table */}
-        <TableContainer component={Paper} sx={{ boxShadow: 0 }}>
-          <Table>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ 
+            fontSize: 12, 
+            fontWeight: 700, 
+            color: '#6b7280', 
+            mb: 1.5, 
+            textTransform: 'uppercase', 
+            letterSpacing: 1 
+          }}>Messages</Typography>
+          <Select 
+            value={minMessages} 
+            onChange={e => setMinMessages(e.target.value)}
+            size="medium"
+            displayEmpty
+            sx={{ 
+              bgcolor: 'white',
+              minHeight: 45,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 1,
+                border: '1px solid #d1d5db',
+                '&:hover fieldset': { borderColor: '#9ca3af' },
+                '&.Mui-focused fieldset': { borderColor: '#0f766e' }
+              },
+              '& .MuiSelect-select': {
+                py: 1.5,
+                fontSize: 14
+              }
+            }}
+          >
+            <MenuItem value=">0">&gt;0</MenuItem>
+            <MenuItem value=">5">&gt;5</MenuItem>
+            <MenuItem value=">10">&gt;10</MenuItem>
+            <MenuItem value=">20">&gt;20</MenuItem>
+          </Select>
+        </Box>
+      </Box>
+        {/* Clean Table - matching screenshot */}
+        <Box sx={{ 
+          bgcolor: 'white', 
+          borderRadius: 1, 
+          overflow: 'hidden', 
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' 
+        }}>
+          <Table sx={{ width: '100%' }}>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ 
+                '& th': {
+                  bgcolor: '#f9fafb',
+                  py: 2,
+                  px: 3,
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: '#6b7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                  borderBottom: '1px solid #e5e7eb'
+                }
+              }}>
                 <TableCell>Session ID</TableCell>
-                <TableCell>IP Address</TableCell>
+                <TableCell>School Code</TableCell>
                 <TableCell>Total Interactions</TableCell>
                 <TableCell>Datetime</TableCell>
                 <TableCell>Actions</TableCell>
@@ -904,23 +1350,128 @@ function ChatHistory() {
             </TableHead>
             <TableBody>
               {loadingSessions ? (
-                <TableRow><TableCell colSpan={5} align="center"><CircularProgress size={20} /></TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={24} sx={{ color: '#0f766e' }} />
+                  </TableCell>
+                </TableRow>
               ) : currentSessions.length === 0 ? (
-                <TableRow><TableCell colSpan={5} align="center">No chat sessions found.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#6b7280', fontSize: 15 }}>
+                    No chat sessions found.
+                  </TableCell>
+                </TableRow>
               ) : currentSessions.map((s, idx) => (
-                <TableRow key={s.sessionId}>
-                  <TableCell>{s.sessionId}</TableCell>
-                  <TableCell>{s.ip || '127.0.0.1'}</TableCell>
-                  <TableCell>{s.messageCount}</TableCell>
-                  <TableCell>{s.lastMessageAt ? new Date(s.lastMessageAt).toLocaleString() : ''}</TableCell>
+                <TableRow 
+                  key={s.sessionId} 
+                  sx={{ 
+                    '&:hover': { bgcolor: '#f8fafc' },
+                    '&:last-child td': { borderBottom: 'none' },
+                    '& td': {
+                      py: 2.5,
+                      px: 3,
+                      borderBottom: '1px solid #f1f5f9',
+                      fontSize: 15,
+                      color: '#374151',
+                      fontWeight: 500
+                    }
+                  }}
+                >
                   <TableCell>
-                    <Button variant="outlined" size="small" onClick={() => handleView(s)}>VIEW</Button>
+                    <Box sx={{ 
+                      fontFamily: 'Monaco, Consolas, monospace', 
+                      fontSize: 14, 
+                      color: '#0f766e', 
+                      fontWeight: 600, 
+                      bgcolor: 'rgba(15, 118, 110, 0.1)', 
+                      py: 0.75, 
+                      px: 1.5, 
+                      borderRadius: 1.5, 
+                      display: 'inline-block' 
+                    }}>
+                      {s.sessionId}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {s.schoolCode ? (
+                      <Box sx={{ 
+                        bgcolor: '#0f766e', 
+                        color: 'white', 
+                        py: 0.75, 
+                        px: 1.5, 
+                        borderRadius: 2.5, 
+                        fontSize: 13, 
+                        fontWeight: 600, 
+                        textTransform: 'uppercase', 
+                        letterSpacing: 0.5, 
+                        display: 'inline-block' 
+                      }}>
+                        {s.schoolCode}
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        bgcolor: '#6b7280', 
+                        color: 'white', 
+                        py: 0.75, 
+                        px: 1.5, 
+                        borderRadius: 2.5, 
+                        fontSize: 13, 
+                        fontWeight: 600, 
+                        display: 'inline-block' 
+                      }}>
+                        N/A
+                      </Box>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ 
+                      bgcolor: 'rgba(16, 185, 129, 0.1)', 
+                      color: '#065f46', 
+                      py: 0.75, 
+                      px: 1.5, 
+                      borderRadius: 2.5, 
+                      fontSize: 13, 
+                      fontWeight: 700, 
+                      textAlign: 'center', 
+                      display: 'inline-block', 
+                      minWidth: 40 
+                    }}>
+                      {s.messageCount}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography sx={{ color: '#6b7280', fontSize: 14 }}>
+                      {s.lastMessageAt ? new Date(s.lastMessageAt).toLocaleString() : ''}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      onClick={() => handleView(s)}
+                      sx={{ 
+                        background: 'linear-gradient(135deg, #0f766e, #10b981)', 
+                        color: 'white', 
+                        py: 1.25, 
+                        px: 2.5, 
+                        borderRadius: 1.5, 
+                        fontWeight: 600, 
+                        fontSize: 13, 
+                        textTransform: 'uppercase', 
+                        letterSpacing: 0.5,
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #0d5b52, #0f766e)',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 4px 12px rgba(15, 118, 110, 0.3)'
+                        }
+                      }}
+                    >
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
+        </Box>
         
         {/* Pagination Controls */}
         {totalPages > 1 && (
@@ -984,7 +1535,7 @@ function ChatHistory() {
             </Box>
           </Box>
         )}
-      </Paper>
+      </Box>
       {/* Chat Messages Dialog */}
       <Dialog open={!!viewSession} onClose={() => setViewSession(null)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1017,6 +1568,6 @@ function ChatHistory() {
           <Button onClick={() => setViewSession(null)}>Close</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
-} 
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test School Code Tracking</title>
+</head>
+<body>
+    <h1>Test School Code Tracking</h1>
+    <p>This page will test if school codes are being tracked correctly.</p>
+    
+    <button onclick="setSchoolCode()">Set School Code to LVISG</button>
+    <button onclick="checkSchoolCode()">Check Current School Code</button>
+    <button onclick="loadChatbot()">Load Chatbot</button>
+    
+    <div id="status"></div>
+
+    <script>
+        function setSchoolCode() {
+            localStorage.setItem('Value', 'LVISG');
+            document.getElementById('status').innerHTML = '<p style="color: green;">✅ School code LVISG set in localStorage</p>';
+            console.log('School code set:', localStorage.getItem('Value'));
+        }
+        
+        function checkSchoolCode() {
+            const value = localStorage.getItem('Value');
+            document.getElementById('status').innerHTML = `<p>Current school code: <strong>${value || 'Not set'}</strong></p>`;
+            console.log('Current school code:', value);
+        }
+        
+        function loadChatbot() {
+            // Create a script tag to load inject.js
+            const script = document.createElement('script');
+            script.src = 'http://127.0.0.1:5003/inject.js';
+            script.onload = function() {
+                document.getElementById('status').innerHTML = '<p style="color: blue;">🤖 Chatbot inject.js loaded! Check if chatbot button appears.</p>';
+            };
+            script.onerror = function() {
+                document.getElementById('status').innerHTML = '<p style="color: red;">❌ Failed to load inject.js</p>';
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Auto-set school code on page load for testing
+        window.onload = function() {
+            setSchoolCode();
+        };
+    </script>
+</body>
+</html>
