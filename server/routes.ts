@@ -342,6 +342,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Support Review Logging ---
+  app.post("/api/support/review", async (req, res) => {
+    try {
+      console.log("📝 Review submission received:", req.body);
+      const { rating, comment, schoolCode, sessionId, pageUrl } = req.body || {};
+      
+      if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+        console.error("❌ Invalid rating value:", rating);
+        return res.status(400).json({ error: "rating (1-5) is required" });
+      }
+      
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      const reviewDoc = {
+        timestamp: new Date(),
+        rating,
+        comment: comment || null,
+        schoolCode: schoolCode || null,
+        sessionId: sessionId || null,
+        pageUrl: pageUrl || null,
+        userAgent: req.headers['user-agent'] || null,
+        ip: (req.headers['x-forwarded-for'] as string) || req.ip || null,
+      };
+      
+      console.log("💾 Saving review document:", reviewDoc);
+      const result = await db.collection("support_review").insertOne(reviewDoc);
+      console.log("✅ Review saved successfully with ID:", result.insertedId);
+      
+      res.json({ success: true, id: result.insertedId });
+    } catch (error) {
+      console.error("❌ Error in /api/support/review:", error);
+      res.status(500).json({ error: "Failed to save support review" });
+    }
+  });
+
+  // --- Get Average Rating ---
+  app.get("/api/support/average-rating", async (req, res) => {
+    try {
+      const schoolCode = req.query.schoolCode as string;
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      const matchStage = schoolCode ? { schoolCode } : {};
+      
+      const result = await db.collection("support_review").aggregate([
+        { $match: matchStage },
+        { $group: {
+          _id: null,
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 }
+        }}
+      ]).toArray();
+      
+      const stats = result[0] || { averageRating: 0, totalReviews: 0 };
+      
+      res.json({ 
+        averageRating: stats.averageRating ? Number(stats.averageRating.toFixed(1)) : 0,
+        totalReviews: stats.totalReviews 
+      });
+    } catch (error) {
+      console.error("Error fetching average rating:", error);
+      res.status(500).json({ error: "Failed to fetch average rating" });
+    }
+  });
+
   // --- Ticket Stats Aggregation ---
   app.get("/api/support/ticket-stats", async (req, res) => {
     try {
@@ -450,6 +516,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to delete document" });
     }
+  });
+
+  // Serve test HTML files
+  app.get('/test-school-tracking', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'test-school-tracking.html'));
   });
 
   // Serve dynamic inject.js for FeeModuleSupportBot embeddable widget (no schoolCode)
@@ -561,6 +632,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         @keyframes pulse { 0% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } 50% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.8); } 100% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.4); } }
         .chatbot-button.pulse { animation: pulse 2s infinite; }
+
+        /* Rating modal styles */
+        .chatbot-rating-overlay { 
+          position: fixed; 
+          inset: 0; 
+          background: rgba(0, 0, 0, 0.5); 
+          display: none; 
+          align-items: center; 
+          justify-content: center; 
+          z-index: 10000000; 
+          backdrop-filter: blur(4px);
+          animation: fadeIn 0.2s ease;
+        }
+        .chatbot-rating-overlay.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .chatbot-rating-modal { 
+          background: #fff; 
+          width: 420px; 
+          max-width: 90vw; 
+          border-radius: 20px; 
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05); 
+          padding: 32px 28px 24px;
+          animation: slideIn 0.3s ease;
+          position: relative;
+        }
+        .rating-title { 
+          font-weight: 700; 
+          font-size: 22px; 
+          color: #111827; 
+          margin-bottom: 6px;
+          line-height: 1.3;
+        }
+        .rating-subtitle { 
+          color: #6b7280; 
+          font-size: 15px; 
+          margin-bottom: 20px;
+          line-height: 1.4;
+        }
+        .rating-stars { 
+          display: flex; 
+          gap: 12px; 
+          margin: 20px 0 24px; 
+          font-size: 36px;
+          justify-content: center;
+        }
+        .rating-star { 
+          cursor: pointer; 
+          color: #e5e7eb; 
+          transition: all 0.2s ease;
+          user-select: none;
+        }
+        .rating-star:hover { 
+          color: #fbbf24; 
+          transform: scale(1.1);
+        }
+        .rating-star.active { 
+          color: #f59e0b;
+          filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));
+        }
+        .rating-comment { 
+          width: 100%; 
+          border: 2px solid #e5e7eb; 
+          border-radius: 12px; 
+          padding: 12px 14px; 
+          min-height: 80px; 
+          resize: vertical; 
+          font-family: inherit; 
+          font-size: 14px;
+          transition: border-color 0.2s ease;
+          box-sizing: border-box;
+        }
+        .rating-comment:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .rating-actions { 
+          display: flex; 
+          justify-content: flex-end; 
+          gap: 12px; 
+          margin-top: 20px; 
+        }
+        .rating-skip { 
+          background: #f3f4f6; 
+          color: #374151; 
+          border: 1px solid #d1d5db; 
+          padding: 10px 20px; 
+          border-radius: 10px; 
+          cursor: pointer; 
+          font-size: 15px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+        .rating-skip:hover {
+          background: #e5e7eb;
+          border-color: #9ca3af;
+        }
+        .rating-submit { 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #fff; 
+          border: none; 
+          padding: 10px 24px; 
+          border-radius: 10px; 
+          cursor: pointer; 
+          font-size: 15px;
+          font-weight: 600;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        .rating-submit:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .rating-submit:active {
+          transform: translateY(0);
+        }
       \`;
       const styleSheet = document.createElement('style');
       styleSheet.textContent = styles;
@@ -591,18 +779,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const chatbotToggle = document.getElementById('chatbotToggle');
         const chatbotWidget = document.getElementById('chatbotWidget');
         const chatbotClose = document.getElementById('chatbotClose');
+        // Rating UI elements
+        const ratingOverlay = document.createElement('div');
+        ratingOverlay.className = 'chatbot-rating-overlay';
+        ratingOverlay.innerHTML = \`
+          <div class=\"chatbot-rating-modal\">
+            <div class=\"rating-title\">Rate Your Experience</div>
+            <div class=\"rating-subtitle\">How would you rate your chat experience?</div>
+            <div class=\"rating-stars\" id=\"ratingStars\">
+              <span class=\"rating-star\" data-value=\"1\">★</span>
+              <span class=\"rating-star\" data-value=\"2\">★</span>
+              <span class=\"rating-star\" data-value=\"3\">★</span>
+              <span class=\"rating-star\" data-value=\"4\">★</span>
+              <span class=\"rating-star\" data-value=\"5\">★</span>
+            </div>
+            <textarea class=\"rating-comment\" id=\"ratingComment\" placeholder=\"Share your feedback... (optional)\"></textarea>
+            <div class=\"rating-actions\">
+              <button class=\"rating-skip\" id=\"ratingSkip\">Skip</button>
+              <button class=\"rating-submit\" id=\"ratingSubmit\">Submit</button>
+            </div>
+          </div>\`;
+        document.body.appendChild(ratingOverlay);
+
+        let selectedRating = 5;
+        const stars = ratingOverlay.querySelectorAll('.rating-star');
+        const highlight = (val) => {
+          stars.forEach(s => { const v = Number(s.getAttribute('data-value')); s.classList.toggle('active', v <= val); });
+        };
+        highlight(selectedRating);
+        stars.forEach(star => star.addEventListener('click', () => { selectedRating = Number(star.getAttribute('data-value')); highlight(selectedRating); }));
+        
+        let chatOpenTime = null;
+        let hasShownRatingThisSession = false;
+        
+        const showRating = () => {
+          if (hasShownRatingThisSession) return;
+          ratingOverlay.classList.add('active');
+          // Reset comment field
+          const commentField = ratingOverlay.querySelector('#ratingComment');
+          if (commentField) commentField.value = '';
+        };
+        const hideRating = () => { ratingOverlay.classList.remove('active'); };
+        
+        // Close modal when clicking overlay background
+        ratingOverlay.addEventListener('click', (e) => {
+          if (e.target === ratingOverlay) {
+            hasShownRatingThisSession = true;
+            hideRating();
+            closeChatWindow();
+          }
+        });
+        
+        const closeChatWindow = () => {
+          chatbotWidget.classList.remove('active');
+          chatbotToggle.style.display = 'flex';
+          chatOpenTime = null;
+          hasShownRatingThisSession = false;
+        };
+        
+        ratingOverlay.querySelector('#ratingSkip').addEventListener('click', () => { 
+          hasShownRatingThisSession = true;
+          hideRating();
+          closeChatWindow();
+        });
+        
+        ratingOverlay.querySelector('#ratingSubmit').addEventListener('click', async () => {
+          const commentElement = ratingOverlay.querySelector('#ratingComment');
+          const comment = commentElement ? commentElement.value.trim() : '';
+          const schoolCodeVal = localStorage.getItem('Value') || '';
+          const apiBase = 'https://supportchat.entab.net';
+          
+          const submitButton = ratingOverlay.querySelector('#ratingSubmit');
+          submitButton.textContent = 'Submitting...';
+          submitButton.disabled = true;
+          
+          console.log('📤 Submitting review:', { rating: selectedRating, comment, schoolCode: schoolCodeVal, pageUrl: location.href });
+          
+          try {
+            const response = await fetch(apiBase + '/api/support/review', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                rating: selectedRating, 
+                comment: comment || null, 
+                schoolCode: schoolCodeVal, 
+                sessionId: null, 
+                pageUrl: location.href 
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              console.log('✅ Review submitted successfully:', data);
+            } else {
+              console.error('❌ Failed to submit review:', response.status, data);
+            }
+          } catch (err) {
+            console.error('❌ Error submitting review:', err);
+          } finally {
+            submitButton.textContent = 'Submit';
+            submitButton.disabled = false;
+            hasShownRatingThisSession = true;
+            hideRating();
+            closeChatWindow();
+          }
+        });
+
         chatbotToggle.addEventListener('click', () => {
           chatbotWidget.classList.add('active');
           chatbotToggle.style.display = 'none';
+          chatOpenTime = Date.now();
+          hasShownRatingThisSession = false;
         });
+        
         chatbotClose.addEventListener('click', () => {
-          chatbotWidget.classList.remove('active');
-          chatbotToggle.style.display = 'flex';
+          const timeOpen = chatOpenTime ? (Date.now() - chatOpenTime) / 1000 : 0;
+          if (timeOpen >= 40 && !hasShownRatingThisSession) {
+            showRating();
+          } else {
+            closeChatWindow();
+          }
         });
         document.addEventListener('click', (e) => {
-          if (!e.target.closest('.chatbot-container')) {
-            chatbotWidget.classList.remove('active');
-            chatbotToggle.style.display = 'flex';
+          if (!e.target.closest('.chatbot-container') && !e.target.closest('.chatbot-rating-overlay')) {
+            const timeOpen = chatOpenTime ? (Date.now() - chatOpenTime) / 1000 : 0;
+            if (chatbotWidget.classList.contains('active') && timeOpen >= 40 && !hasShownRatingThisSession) {
+              showRating();
+            } else if (chatbotWidget.classList.contains('active')) {
+              chatbotWidget.classList.remove('active');
+              chatbotToggle.style.display = 'flex';
+              chatOpenTime = null;
+              hasShownRatingThisSession = false;
+            }
           }
         });
         const hasSeenChatbot = localStorage.getItem('chatbot-seen');

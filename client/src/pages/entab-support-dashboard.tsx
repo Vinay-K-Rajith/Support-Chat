@@ -1084,6 +1084,8 @@ function ChatHistory() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
   const theme = useTheme();
 
   useEffect(() => {
@@ -1097,6 +1099,17 @@ function ChatHistory() {
       .catch(() => {
         setError("Failed to load chat sessions.");
         setLoadingSessions(false);
+      });
+    
+    // Fetch average rating
+    fetch("/api/support/average-rating")
+      .then(res => res.json())
+      .then(data => {
+        setAverageRating(data.averageRating || 0);
+        setTotalReviews(data.totalReviews || 0);
+      })
+      .catch(() => {
+        console.error("Failed to load average rating");
       });
   }, []);
 
@@ -1151,28 +1164,59 @@ function ChatHistory() {
   return (
     <>
       <Box sx={{ width: '100%', p: 4 }}>
-      {/* Section Title with Accent Line - matching screenshot */}
-      <Typography 
-        variant="h4" 
-        fontWeight={700} 
-        sx={{ 
-          color: '#374151', 
-          fontSize: 24, 
+      {/* Section Title with Accent Line and Average Rating */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography 
+          variant="h4" 
+          fontWeight={700} 
+          sx={{ 
+            color: '#374151', 
+            fontSize: 24, 
+            display: 'flex', 
+            alignItems: 'center',
+            '&::before': {
+              content: '""',
+              width: '4px',
+              height: '24px',
+              background: '#0f766e',
+              borderRadius: '2px',
+              marginRight: '16px'
+            }
+          }}
+        >
+          Chat Sessions
+        </Typography>
+        
+        {/* Average Rating Display */}
+        <Box sx={{ 
           display: 'flex', 
-          alignItems: 'center',
-          mb: 4,
-          '&::before': {
-            content: '""',
-            width: '4px',
-            height: '24px',
-            background: '#0f766e',
-            borderRadius: '2px',
-            marginRight: '16px'
-          }
-        }}
-      >
-        Chat Sessions
-      </Typography>
+          alignItems: 'center', 
+          gap: 2,
+          bgcolor: '#fff',
+          px: 3,
+          py: 1.5,
+          borderRadius: 2,
+          border: '2px solid #f59e0b',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)'
+        }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600, fontSize: 11 }}>
+              AVERAGE RATING
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              <Typography variant="h5" fontWeight={700} sx={{ color: '#f59e0b' }}>
+                {averageRating.toFixed(1)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#f59e0b', fontSize: 18 }}>
+                ★
+              </Typography>
+            </Box>
+            <Typography variant="caption" sx={{ color: '#9ca3af', fontSize: 10 }}>
+              {totalReviews} review{totalReviews !== 1 ? 's' : ''}
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
       
       {/* Filters Grid - matching screenshot */}
       <Box sx={{ 
