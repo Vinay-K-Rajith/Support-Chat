@@ -262,7 +262,7 @@ async function updateKnowledgeBase(data) {
 var genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || ""
 );
-var model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+var model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
 async function generateResponse(userMessage, sessionId) {
   try {
     const supportContext = getSupportContext();
@@ -274,9 +274,9 @@ ${doc.text}`).join("\n\n");
     }
     const systemPrompt = `You are a customer support AI assistant for the Entab Support Desk. You help users solve problems related to any Entab module, including fees, billing, academics, online payments, reports, and more.
 
-When answering, use the following formatting triggers to help the UI render your response beautifully:
+When answering,always use the following formatting triggers to help the UI render your response beautifully:
 - For a summary, start with 'Quick Answer:'
-- For instructions,always use 'Step-by-Step Guide:' as a heading, then list each step as a numbered list (1., 2., ...)
+- For instructions,always use 'Step-by-Step Guide:' as a heading, then list each step as a numbered list (1., 2., ...)(very important)(ensure all steps are clearly given in every response think step by step)
 - For important notes, use 'Note:' or 'Warning:' at the start of the line whenever it is important to the user
 - Use markdown formatting for clarity (bold for headings, lists, etc.)
 
@@ -527,6 +527,124 @@ async function registerRoutes(app2) {
       res.json({ usage });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch hourly usage stats" });
+    }
+  });
+  app2.get("/api/chat/report", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const twoDaysAgo = /* @__PURE__ */ new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      const allMessages = await db.collection("support_chat_history").find({
+        timestamp: { $gte: twoDaysAgo }
+      }).sort({ timestamp: 1 }).toArray();
+      const failureKeywords = [
+        "I apologize, but I'm having trouble",
+        "try again later or contact support",
+        "I do not (have|see) specific information",
+        "I'm not able to help with that",
+        "I do not see specific",
+        "based on the provided documentation, I do not"
+      ];
+      const regexPattern = failureKeywords.join("|");
+      const sessions = {};
+      allMessages.forEach((msg) => {
+        if (!sessions[msg.sessionId]) {
+          sessions[msg.sessionId] = {
+            sessionId: msg.sessionId,
+            schoolCode: msg.schoolCode,
+            messages: [],
+            startTime: msg.timestamp,
+            endTime: msg.timestamp
+          };
+        }
+        sessions[msg.sessionId].messages.push(msg);
+        if (msg.timestamp > sessions[msg.sessionId].endTime) {
+          sessions[msg.sessionId].endTime = msg.timestamp;
+        }
+      });
+      const resolved = [];
+      const unresolved = [];
+      Object.values(sessions).forEach((session) => {
+        const hasFailed = session.messages.some(
+          (msg) => !msg.isUser && new RegExp(regexPattern, "i").test(msg.content)
+        );
+        const userMessages = session.messages.filter((m) => m.isUser);
+        const aiMessages = session.messages.filter((m) => !m.isUser);
+        const sessionData = {
+          sessionId: session.sessionId,
+          schoolCode: session.schoolCode || "N/A",
+          userQuestions: userMessages.length,
+          aiResponses: aiMessages.length,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          duration: Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 1e3),
+          firstQuestion: userMessages[0]?.content || "N/A"
+        };
+        if (hasFailed) {
+          unresolved.push(sessionData);
+        } else {
+          resolved.push(sessionData);
+        }
+      });
+      res.json({
+        period: { start: twoDaysAgo, end: /* @__PURE__ */ new Date() },
+        summary: {
+          total: Object.keys(sessions).length,
+          resolved: resolved.length,
+          unresolved: unresolved.length,
+          successRate: Object.keys(sessions).length > 0 ? Math.round(resolved.length / Object.keys(sessions).length * 100) : 0
+        },
+        resolved,
+        unresolved
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+  app2.get("/api/chat/unanswered", async (req, res) => {
+    try {
+      await mongo_client_default.connect();
+      const db = mongo_client_default.getDb("test");
+      const unansweredKeywords = [
+        "I apologize, but I'm having trouble",
+        "try again later or contact support",
+        "I do not (have|see) specific information",
+        "I'm not able to help with that",
+        "I do not see specific",
+        "based on the provided documentation, I do not"
+      ];
+      const regexPattern = unansweredKeywords.join("|");
+      const unansweredMessages = await db.collection("support_chat_history").find({
+        isUser: false,
+        content: { $regex: regexPattern, $options: "i" }
+      }).sort({ timestamp: -1 }).limit(0).toArray();
+      console.log(`\u{1F4CA} Found ${unansweredMessages.length} unanswered AI responses`);
+      const unansweredData = [];
+      for (const aiMsg of unansweredMessages) {
+        const userMsg = await db.collection("support_chat_history").findOne({
+          sessionId: aiMsg.sessionId,
+          isUser: true,
+          timestamp: { $lt: aiMsg.timestamp }
+        }, {
+          sort: { timestamp: -1 }
+        });
+        if (userMsg) {
+          unansweredData.push({
+            sessionId: aiMsg.sessionId,
+            userMessage: userMsg.content,
+            aiResponse: aiMsg.content,
+            schoolCode: aiMsg.schoolCode,
+            timestamp: aiMsg.timestamp
+          });
+        }
+      }
+      console.log(`\u2705 Returning ${unansweredData.length} unanswered questions`);
+      res.json({ unanswered: unansweredData });
+    } catch (error) {
+      console.error("Error fetching unanswered questions:", error);
+      res.status(500).json({ error: "Failed to fetch unanswered questions" });
     }
   });
   app2.get("/api/debug/messages", async (req, res) => {

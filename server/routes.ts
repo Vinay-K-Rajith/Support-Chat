@@ -115,6 +115,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Report Data API ---
+  app.get("/api/chat/report", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      // Get chats from last 2 days
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      const allMessages = await db.collection("support_chat_history")
+        .find({
+          timestamp: { $gte: twoDaysAgo }
+        })
+        .sort({ timestamp: 1 })
+        .toArray();
+      
+      // Keywords for failed chats
+      const failureKeywords = [
+        "I apologize, but I'm having trouble",
+        "try again later or contact support",
+        "I do not (have|see) specific information",
+        "I'm not able to help with that",
+        "I do not see specific",
+        "based on the provided documentation, I do not"
+      ];
+      const regexPattern = failureKeywords.join("|");
+      
+      // Group messages by session
+      const sessions: Record<string, any> = {};
+      allMessages.forEach((msg: any) => {
+        if (!sessions[msg.sessionId]) {
+          sessions[msg.sessionId] = {
+            sessionId: msg.sessionId,
+            schoolCode: msg.schoolCode,
+            messages: [],
+            startTime: msg.timestamp,
+            endTime: msg.timestamp
+          };
+        }
+        sessions[msg.sessionId].messages.push(msg);
+        if (msg.timestamp > sessions[msg.sessionId].endTime) {
+          sessions[msg.sessionId].endTime = msg.timestamp;
+        }
+      });
+      
+      // Classify sessions
+      const resolved: any[] = [];
+      const unresolved: any[] = [];
+      
+      Object.values(sessions).forEach((session: any) => {
+        const hasFailed = session.messages.some((msg: any) => 
+          !msg.isUser && new RegExp(regexPattern, 'i').test(msg.content)
+        );
+        
+        const userMessages = session.messages.filter((m: any) => m.isUser);
+        const aiMessages = session.messages.filter((m: any) => !m.isUser);
+        
+        const sessionData = {
+          sessionId: session.sessionId,
+          schoolCode: session.schoolCode || 'N/A',
+          userQuestions: userMessages.length,
+          aiResponses: aiMessages.length,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          duration: Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 1000),
+          firstQuestion: userMessages[0]?.content || 'N/A'
+        };
+        
+        if (hasFailed) {
+          unresolved.push(sessionData);
+        } else {
+          resolved.push(sessionData);
+        }
+      });
+      
+      res.json({
+        period: { start: twoDaysAgo, end: new Date() },
+        summary: {
+          total: Object.keys(sessions).length,
+          resolved: resolved.length,
+          unresolved: unresolved.length,
+          successRate: Object.keys(sessions).length > 0 
+            ? Math.round((resolved.length / Object.keys(sessions).length) * 100) 
+            : 0
+        },
+        resolved,
+        unresolved
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // --- Unanswered Questions API ---
+  app.get("/api/chat/unanswered", async (req, res) => {
+    try {
+      await MongoClientService.connect();
+      const db = MongoClientService.getDb("test");
+      
+      // Keywords that indicate the bot couldn't answer
+      // Only match if the message is short and contains these phrases (likely error messages)
+      const unansweredKeywords = [
+        "I apologize, but I'm having trouble",
+        "try again later or contact support",
+        "I do not (have|see) specific information",
+        "I'm not able to help with that",
+        "I do not see specific",
+        "based on the provided documentation, I do not"
+      ];
+      
+      // Build regex pattern to match any of these phrases
+      const regexPattern = unansweredKeywords.join("|");
+      
+      // Find AI responses that contain unanswered indicators
+      const unansweredMessages = await db.collection("support_chat_history")
+        .find({
+          isUser: false,
+          content: { $regex: regexPattern, $options: 'i' }
+        })
+        .sort({ timestamp: -1 })
+        .limit(0) // 0 means no limit in MongoDB
+        .toArray();
+      
+      console.log(`📊 Found ${unansweredMessages.length} unanswered AI responses`);
+      
+      // For each unanswered AI response, get the preceding user message
+      const unansweredData = [];
+      for (const aiMsg of unansweredMessages) {
+        const userMsg = await db.collection("support_chat_history")
+          .findOne({
+            sessionId: aiMsg.sessionId,
+            isUser: true,
+            timestamp: { $lt: aiMsg.timestamp }
+          }, {
+            sort: { timestamp: -1 }
+          });
+        
+        if (userMsg) {
+          unansweredData.push({
+            sessionId: aiMsg.sessionId,
+            userMessage: userMsg.content,
+            aiResponse: aiMsg.content,
+            schoolCode: aiMsg.schoolCode,
+            timestamp: aiMsg.timestamp
+          });
+        }
+      }
+      
+      console.log(`✅ Returning ${unansweredData.length} unanswered questions`);
+      res.json({ unanswered: unansweredData });
+    } catch (error) {
+      console.error("Error fetching unanswered questions:", error);
+      res.status(500).json({ error: "Failed to fetch unanswered questions" });
+    }
+  });
+
   // --- DEBUG: Check Database Contents ---
   app.get("/api/debug/messages", async (req, res) => {
     try {

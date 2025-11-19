@@ -1,4 +1,4 @@
-import{c as r,j as e,B as a,C as n,e as i,Q as l,q as c,T as d,d as h}from"./chat-interface-DFdDymQj.js";import{C as u}from"./index-Bp85Buyj.js";import{r as x,b as m}from"./vendor-BnpTsxBV.js";/**
+import{c as r,j as e,B as a,C as n,e as i,Q as l,q as c,T as d,d as h}from"./chat-interface-DFdDymQj.js";import{C as u}from"./index-BehsWKCc.js";import{r as x,b as m}from"./vendor-BnpTsxBV.js";/**
  * @license lucide-react v0.453.0 - ISC
  *
  * This source code is licensed under the ISC license.

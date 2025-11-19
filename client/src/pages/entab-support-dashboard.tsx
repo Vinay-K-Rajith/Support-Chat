@@ -10,6 +10,7 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemButton from '@mui/material/ListItemButton';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InputBase from '@mui/material/InputBase';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -54,6 +55,8 @@ import {
 } from 'chart.js';
 import dayjs from 'dayjs';
 import { MongoClient } from "mongodb";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 ChartJS.register(
   CategoryScale,
@@ -70,6 +73,7 @@ const sidebarTabs = [
   { key: "dashboard", label: "Dashboard", icon: <HomeIcon /> },
   { key: "knowledge", label: "Knowledge Base", icon: <MenuBookIcon /> },
   { key: "chat", label: "Chat History", icon: <MenuBookIcon /> },
+  { key: "unanswered", label: "Unanswered Questions", icon: <HelpOutlineIcon /> },
   { key: "schools", label: "School Management", icon: <MenuBookIcon /> },
 ];
 
@@ -104,6 +108,196 @@ export default function EntabSupportDashboard() {
   const [ticketHourlyData, setTicketHourlyData] = useState<{ hour: number, count: number }[]>([]);
   const [loadingTicketStats, setLoadingTicketStats] = useState(true);
   const [ticketStatsError, setTicketStatsError] = useState<string | null>(null);
+
+  const handleGenerateReport = async () => {
+    try {
+      const response = await fetch('/api/chat/report');
+      const data = await response.json();
+      
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Header with gradient background simulation
+      pdf.setFillColor(67, 97, 238);
+      pdf.rect(0, 0, pageWidth, 45, 'F');
+      
+      // Logo/Title
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ENTAB Support Desk', 15, 20);
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Performance Analytics Report', 15, 30);
+      
+      // Report period
+      const startDate = new Date(data.period.start).toLocaleDateString();
+      const endDate = new Date(data.period.end).toLocaleDateString();
+      pdf.setFontSize(10);
+      pdf.text(`Period: ${startDate} - ${endDate}`, 15, 38);
+      
+      // Report generated timestamp
+      pdf.setFontSize(8);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 60, 38);
+      
+      // Executive Summary Box
+      let yPos = 55;
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(15, yPos, pageWidth - 30, 45, 3, 3, 'F');
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Executive Summary', 20, yPos + 10);
+      
+      // Summary statistics in grid
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const col1 = 25;
+      const col2 = pageWidth / 2 + 5;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Total Conversations:', col1, yPos + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(data.summary.total.toString(), col1 + 50, yPos + 22);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Success Rate:', col2, yPos + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(16, 185, 129);
+      pdf.text(data.summary.successRate + '%', col2 + 35, yPos + 22);
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Resolved Queries:', col1, yPos + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(16, 185, 129);
+      pdf.text(data.summary.resolved.toString(), col1 + 50, yPos + 32);
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Unresolved Queries:', col2, yPos + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(239, 68, 68);
+      pdf.text(data.summary.unresolved.toString(), col2 + 35, yPos + 32);
+      
+      // Resolved Conversations Table
+      yPos = 110;
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('✓ Successfully Resolved Conversations', 15, yPos);
+      
+      const resolvedData = data.resolved.slice(0, 15).map((item: any) => [
+        new Date(item.startTime).toLocaleString(),
+        item.schoolCode,
+        item.userQuestions,
+        item.aiResponses,
+        item.firstQuestion
+      ]);
+      
+      autoTable(pdf, {
+        startY: yPos + 5,
+        head: [['Timestamp', 'School', 'Questions', 'Responses', 'First Query']],
+        body: resolvedData,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [16, 185, 129],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: { 
+          fontSize: 8,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: { 
+          fillColor: [248, 250, 252] 
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 'auto' }
+        }
+      });
+      
+      // Add new page for unresolved
+      pdf.addPage();
+      
+      // Header on new page
+      pdf.setFillColor(67, 97, 238);
+      pdf.rect(0, 0, pageWidth, 35, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ENTAB Support Desk - Continued', 15, 22);
+      
+      // Unresolved Conversations Table
+      yPos = 45;
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('⚠ Unresolved / Failed Conversations', 15, yPos);
+      
+      const unresolvedData = data.unresolved.slice(0, 15).map((item: any) => [
+        new Date(item.startTime).toLocaleString(),
+        item.schoolCode,
+        item.userQuestions,
+        item.aiResponses,
+        item.firstQuestion
+      ]);
+      
+      autoTable(pdf, {
+        startY: yPos + 5,
+        head: [['Timestamp', 'School', 'Questions', 'Responses', 'First Query']],
+        body: unresolvedData.length > 0 ? unresolvedData : [['No unresolved conversations', '', '', '', '']],
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [239, 68, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: { 
+          fontSize: 8,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: { 
+          fillColor: [254, 242, 242] 
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 'auto' }
+        }
+      });
+      
+      // Footer on last page
+      const finalY = (pdf as any).lastAutoTable.finalY + 15;
+      if (finalY < pageHeight - 30) {
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 116, 139);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('This report is auto-generated by ENTAB Support Analytics System', pageWidth / 2, pageHeight - 20, { align: 'center' });
+      }
+      
+      // Save PDF
+      const fileName = `ENTAB_Support_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report. Please try again.');
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -452,6 +646,31 @@ export default function EntabSupportDashboard() {
                   <SummaryCard label="Messages Today" value={messagesToday} />
                   <SummaryCard label="Avg. Msgs/Session" value={avgMessagesPerSession} />
                 </Box>
+                
+                {/* Generate Report Button */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                  <Button 
+                    variant="contained" 
+                    size="large"
+                    onClick={handleGenerateReport}
+                    sx={{ 
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      px: 4,
+                      py: 1.5,
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5568d3 0%, #65408b 100%)',
+                        boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)'
+                      }
+                    }}
+                  >
+                    📊 Generate Report (Last 2 Days)
+                  </Button>
+                </Box>
+                
                 {/* Usage & Ticket Stats Graphs Side by Side */}
                 <Box sx={{
                   width: '100%',
@@ -606,6 +825,23 @@ export default function EntabSupportDashboard() {
                 </Box>
               </>
             )}
+            {tab === "unanswered" && (
+              <>
+                <Box sx={{ width: '100%', mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box sx={{ maxWidth: 1200, width: '100%', mb: 2 }}>
+                    <Typography variant="h3" fontWeight={700} sx={{ color: '#1e293b', fontSize: 28, letterSpacing: 0, lineHeight: 1.15, mb: 1 }}>
+                      Unanswered Questions
+                    </Typography>
+                    <Typography sx={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>
+                      Review questions the AI couldn't answer to improve the knowledge base.
+                    </Typography>
+                  </Box>
+                  <Paper sx={{ width: '100%', maxWidth: 1200, p: 0, borderRadius: 3, boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+                    <UnansweredQuestions />
+                  </Paper>
+                </Box>
+              </>
+            )}
           </Paper>
         </Box>
       </Box>
@@ -628,6 +864,7 @@ function KnowledgeBaseEditor() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [viewDocument, setViewDocument] = useState<any | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -861,11 +1098,32 @@ function KnowledgeBaseEditor() {
             {documents.length === 0 ? (
               <Typography sx={{ color: '#64748b' }}>No documents uploaded yet.</Typography>
             ) : (
-              <Box component="ul" sx={{ pl: 2, listStyle: 'disc', color: '#222' }}>
+              <Box component="ul" sx={{ pl: 2, listStyle: 'none', color: '#222' }}>
                 {documents.map(doc => (
-                  <li key={doc.id} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
-                    <span style={{ flex: 1 }}>{doc.filename}</span>
-                    <Button size="small" color="error" onClick={() => handleDeleteDoc(doc.id)} sx={{ ml: 2 }}>Delete</Button>
+                  <li key={doc.id} style={{ marginBottom: 12, display: 'flex', alignItems: 'center', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
+                      <Typography sx={{ fontWeight: 500, color: '#1e293b' }}>{doc.filename}</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button 
+                        size="small" 
+                        variant="outlined"
+                        onClick={() => setViewDocument(doc)} 
+                        sx={{ textTransform: 'none' }}
+                      >
+                        View
+                      </Button>
+                      <Button 
+                        size="small" 
+                        color="error" 
+                        variant="outlined"
+                        onClick={() => handleDeleteDoc(doc.id)} 
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
                   </li>
                 ))}
               </Box>
@@ -876,6 +1134,39 @@ function KnowledgeBaseEditor() {
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
         <Button variant="contained" color="primary" size="large" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Knowledge Base'}</Button>
       </Box>
+
+      {/* Document Viewer Dialog */}
+      <Dialog
+        open={Boolean(viewDocument)}
+        onClose={() => setViewDocument(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {viewDocument?.filename}
+          </Typography>
+          <Button onClick={() => setViewDocument(null)} sx={{ minWidth: 'auto', p: 1 }}>
+            ✕
+          </Button>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, maxHeight: '60vh', overflow: 'auto' }}>
+          <Typography 
+            component="pre" 
+            sx={{ 
+              whiteSpace: 'pre-wrap', 
+              wordWrap: 'break-word',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              color: '#1e293b',
+              margin: 0
+            }}
+          >
+            {viewDocument?.text || 'No content available'}
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
@@ -1045,27 +1336,6 @@ function SchoolManagement() {
             </Box>
           </Paper>
         </Box>
-      </Box>
-      
-      {/* Generate Reports */}
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <Button 
-          variant="contained" 
-          size="large"
-          sx={{ 
-            bgcolor: '#0f766e', 
-            color: 'white', 
-            px: 4, 
-            py: 1.5, 
-            borderRadius: 2,
-            fontWeight: 600,
-            '&:hover': { 
-              bgcolor: '#0d5b52'
-            }
-          }}
-        >
-          Generate Reports
-        </Button>
       </Box>
     </Box>
   );
@@ -1580,6 +1850,497 @@ function ChatHistory() {
           </Box>
         )}
       </Box>
+      {/* Chat Messages Dialog */}
+      <Dialog open={!!viewSession} onClose={() => setViewSession(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Chat Messages
+          <IconButton onClick={() => setViewSession(null)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ bgcolor: theme.palette.grey[50] }}>
+          {loadingMessages ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={24} /></Box>
+          ) : messages.length === 0 ? (
+            <Typography sx={{ color: '#64748b', fontSize: 16, py: 4 }}>No messages in this session.</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {messages.map((msg, idx) => (
+                <div key={msg._id || idx} className={`flex ${msg.isUser ? "justify-end" : "justify-start"}`}>
+                  <div className="max-w-[95%]">
+                    <MessageBubble
+                      content={msg.content}
+                      isUser={msg.isUser}
+                      timestamp={msg.timestamp ? new Date(msg.timestamp) : new Date()}
+                      isFirstBotMessage={false}
+                    />
+                  </div>
+                </div>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewSession(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
+function UnansweredQuestions() {
+  const [unanswered, setUnanswered] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewSession, setViewSession] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const theme = useTheme();
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/chat/unanswered")
+      .then(res => res.json())
+      .then(data => {
+        setUnanswered(data.unanswered || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load unanswered questions.");
+        setLoading(false);
+      });
+  }, []);
+
+  const handleView = (session: any) => {
+    setViewSession(session);
+    setLoadingMessages(true);
+    fetch(`/api/chat/history/${session.sessionId}`)
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data.messages || []);
+        setLoadingMessages(false);
+      })
+      .catch(() => {
+        setLoadingMessages(false);
+      });
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      const response = await fetch('/api/chat/report');
+      const data = await response.json();
+      
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Header with gradient background simulation
+      pdf.setFillColor(67, 97, 238);
+      pdf.rect(0, 0, pageWidth, 45, 'F');
+      
+      // Logo/Title
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ENTAB Support Desk', 15, 20);
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Performance Analytics Report', 15, 30);
+      
+      // Report period
+      const startDate = new Date(data.period.start).toLocaleDateString();
+      const endDate = new Date(data.period.end).toLocaleDateString();
+      pdf.setFontSize(10);
+      pdf.text(`Period: ${startDate} - ${endDate}`, 15, 38);
+      
+      // Report generated timestamp
+      pdf.setFontSize(8);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 60, 38);
+      
+      // Executive Summary Box
+      let yPos = 55;
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(15, yPos, pageWidth - 30, 45, 3, 3, 'F');
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Executive Summary', 20, yPos + 10);
+      
+      // Summary statistics in grid
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const col1 = 25;
+      const col2 = pageWidth / 2 + 5;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Total Conversations:', col1, yPos + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(data.summary.total.toString(), col1 + 50, yPos + 22);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Success Rate:', col2, yPos + 22);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(16, 185, 129);
+      pdf.text(data.summary.successRate + '%', col2 + 35, yPos + 22);
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Resolved Queries:', col1, yPos + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(16, 185, 129);
+      pdf.text(data.summary.resolved.toString(), col1 + 50, yPos + 32);
+      
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Unresolved Queries:', col2, yPos + 32);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(239, 68, 68);
+      pdf.text(data.summary.unresolved.toString(), col2 + 35, yPos + 32);
+      
+      // Resolved Conversations Table
+      yPos = 110;
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('✓ Successfully Resolved Conversations', 15, yPos);
+      
+      const resolvedData = data.resolved.slice(0, 15).map((item: any) => [
+        new Date(item.startTime).toLocaleString(),
+        item.schoolCode,
+        item.userQuestions,
+        item.aiResponses,
+        item.firstQuestion
+      ]);
+      
+      autoTable(pdf, {
+        startY: yPos + 5,
+        head: [['Timestamp', 'School', 'Questions', 'Responses', 'First Query']],
+        body: resolvedData,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [16, 185, 129],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: { 
+          fontSize: 8,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: { 
+          fillColor: [248, 250, 252] 
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 'auto' }
+        }
+      });
+      
+      // Add new page for unresolved
+      pdf.addPage();
+      
+      // Header on new page
+      pdf.setFillColor(67, 97, 238);
+      pdf.rect(0, 0, pageWidth, 35, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ENTAB Support Desk - Continued', 15, 22);
+      
+      // Unresolved Conversations Table
+      yPos = 45;
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('⚠ Unresolved / Failed Conversations', 15, yPos);
+      
+      const unresolvedData = data.unresolved.slice(0, 15).map((item: any) => [
+        new Date(item.startTime).toLocaleString(),
+        item.schoolCode,
+        item.userQuestions,
+        item.aiResponses,
+        item.firstQuestion
+      ]);
+      
+      autoTable(pdf, {
+        startY: yPos + 5,
+        head: [['Timestamp', 'School', 'Questions', 'Responses', 'First Query']],
+        body: unresolvedData.length > 0 ? unresolvedData : [['No unresolved conversations', '', '', '', '']],
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [239, 68, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: { 
+          fontSize: 8,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: { 
+          fillColor: [254, 242, 242] 
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 'auto' }
+        }
+      });
+      
+      // Footer on last page
+      const finalY = (pdf as any).lastAutoTable.finalY + 15;
+      if (finalY < pageHeight - 30) {
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 116, 139);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('This report is auto-generated by ENTAB Support Analytics System', pageWidth / 2, pageHeight - 20, { align: 'center' });
+      }
+      
+      // Save PDF
+      const fileName = `ENTAB_Support_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report. Please try again.');
+    }
+  };
+
+  const handleDownload = () => {
+    // Convert to CSV
+    const headers = ['User Question', 'AI Response', 'School Code', 'Session ID', 'Timestamp'];
+    const csvRows = [
+      headers.join(','),
+      ...unanswered.map(item => [
+        `"${item.userMessage.replace(/"/g, '""')}"`,
+        `"${item.aiResponse.replace(/"/g, '""')}"`,
+        item.schoolCode || 'N/A',
+        item.sessionId,
+        new Date(item.timestamp).toISOString()
+      ].join(','))
+    ];
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `unanswered-questions-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(unanswered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = unanswered.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 6 }}>
+        <Typography sx={{ color: 'red' }}>{error}</Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <Box sx={{ width: '100%', p: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography 
+            variant="h4" 
+            fontWeight={700} 
+            sx={{ 
+              color: '#374151', 
+              fontSize: 24, 
+              display: 'flex', 
+              alignItems: 'center',
+              '&::before': {
+                content: '""',
+                width: '4px',
+                height: '24px',
+                background: '#ef4444',
+                borderRadius: '2px',
+                marginRight: '16px'
+              }
+            }}
+          >
+            Unanswered Questions ({unanswered.length})
+          </Typography>
+          
+          {unanswered.length > 0 && (
+            <Button
+              variant="contained"
+              onClick={handleDownload}
+              sx={{ 
+                bgcolor: '#0f766e',
+                '&:hover': { bgcolor: '#115e59' },
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              Download All ({unanswered.length})
+            </Button>
+          )}
+        </Box>
+
+        {unanswered.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography sx={{ color: '#64748b', fontSize: 18 }}>
+              No unanswered questions found. Great job! 🎉
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 1 }}>
+            <Table>
+              <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>User Question</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>AI Response</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>School Code</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>Timestamp</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#1e293b' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {currentItems.map((item, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell sx={{ maxWidth: 300 }}>
+                      <Typography sx={{ fontSize: 14, color: '#1e293b', wordBreak: 'break-word' }}>
+                        {item.userMessage}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 400 }}>
+                      <Box 
+                        sx={{ 
+                          fontSize: 13, 
+                          color: '#64748b', 
+                          maxHeight: 150, 
+                          overflow: 'auto',
+                          '& strong': { fontWeight: 600, color: '#1e293b' },
+                          '& p': { margin: '4px 0' },
+                          '& ul, & ol': { paddingLeft: '20px', margin: '4px 0' },
+                          '& li': { margin: '2px 0' }
+                        }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: item.aiResponse
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\n\n/g, '</p><p>')
+                            .replace(/\n/g, '<br/>')
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography sx={{ fontSize: 14, color: '#64748b' }}>
+                        {item.schoolCode || 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography sx={{ fontSize: 14, color: '#64748b' }}>
+                        {new Date(item.timestamp).toLocaleString()}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={() => handleView(item)}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        View Session
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {/* Pagination */}
+        {unanswered.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4, gap: 2 }}>
+            <Button
+              variant="outlined"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              sx={{ minWidth: 100 }}
+            >
+              Previous
+            </Button>
+            
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "contained" : "outlined"}
+                    onClick={() => handlePageChange(pageNum)}
+                    sx={{ 
+                      minWidth: 40,
+                      bgcolor: currentPage === pageNum ? '#0f766e' : 'transparent',
+                      '&:hover': {
+                        bgcolor: currentPage === pageNum ? '#115e59' : 'rgba(15, 118, 110, 0.08)'
+                      }
+                    }}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </Box>
+
+            <Button
+              variant="outlined"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              sx={{ minWidth: 100 }}
+            >
+              Next
+            </Button>
+
+            <Typography sx={{ ml: 2, color: '#64748b', fontSize: 14 }}>
+              Page {currentPage} of {totalPages} ({unanswered.length} total)
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
       {/* Chat Messages Dialog */}
       <Dialog open={!!viewSession} onClose={() => setViewSession(null)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
